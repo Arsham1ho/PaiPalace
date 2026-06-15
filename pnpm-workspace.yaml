@@ -1,0 +1,5 @@
+packages:
+  - "server"
+  - "client"
+  # "contracts" is intentionally excluded from the default workspace install
+  # (Hardhat is heavy). Install separately: cd contracts && pnpm install
