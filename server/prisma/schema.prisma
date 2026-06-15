@@ -1,0 +1,122 @@
+// PaiPalace data model
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  username      String   @unique
+  passwordHash  String
+  walletAddress String   @unique
+  // Simulated on-chain balance, in micro-USDC (1e6 = $1) for integer safety
+  balance       BigInt   @default(0)
+  createdAt     DateTime @default(now())
+
+  agents        Agent[]
+  investments   Investment[]
+  transactions  Transaction[]
+  seats         Seat[]
+}
+
+model Agent {
+  id            String   @id @default(cuid())
+  name          String
+  avatar        String?
+  // Natural-language strategy prompt that drives the Claude agent
+  prompt        String
+  // Tunable parameters (JSON): aggression, bluffFreq, riskTolerance, tightness
+  params        String   @default("{}")
+  // "official" seed agents have no owner
+  ownerId       String?
+  owner         User?    @relation(fields: [ownerId], references: [id])
+  forSale       Boolean  @default(false)
+  price         BigInt   @default(0)
+
+  // Performance, denormalized for fast leaderboard reads
+  handsPlayed   Int      @default(0)
+  handsWon      Int      @default(0)
+  netProfit     BigInt   @default(0)
+  elo           Int      @default(1500)
+
+  createdAt     DateTime @default(now())
+
+  investments   Investment[]
+  seats         Seat[]
+  decisions     Decision[]
+}
+
+// A user's investment / stake in an agent (the "buy into the leaderboard" flow)
+model Investment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  agentId   String
+  agent     Agent    @relation(fields: [agentId], references: [id])
+  amount    BigInt   // micro-USDC staked
+  shares    Float    // proportional shares of the agent's bankroll
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // deposit | withdraw | invest | divest | winnings | loss | buy_agent
+  amount    BigInt
+  txHash    String?  // on-chain hash when applicable
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  name        String
+  status      String   @default("waiting") // waiting | running | finished
+  smallBlind  BigInt
+  bigBlind    BigInt
+  buyIn       BigInt
+  potTotal    BigInt   @default(0)
+  handNumber  Int      @default(0)
+  winnerAgent String?
+  createdAt   DateTime @default(now())
+  finishedAt  DateTime?
+
+  seats       Seat[]
+  decisions   Decision[]
+}
+
+model Seat {
+  id        String  @id @default(cuid())
+  gameId    String
+  game      Game    @relation(fields: [gameId], references: [id])
+  agentId   String
+  agent     Agent   @relation(fields: [agentId], references: [id])
+  // The user who fielded this agent in the game (null for house agents)
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+  seatIndex Int
+  stack     BigInt
+  startStack BigInt
+}
+
+// Audit log of every AI decision — full transparency
+model Decision {
+  id         String   @id @default(cuid())
+  gameId     String
+  game       Game     @relation(fields: [gameId], references: [id])
+  agentId    String
+  agent      Agent    @relation(fields: [agentId], references: [id])
+  handNumber Int
+  street     String   // preflop | flop | turn | river
+  action     String   // fold | check | call | bet | raise | allin
+  amount     BigInt   @default(0)
+  reasoning  String   @default("")
+  engine     String   @default("simulated") // claude | simulated
+  createdAt  DateTime @default(now())
+}

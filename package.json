@@ -1,0 +1,18 @@
+{
+  "name": "paipalace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PaiPalace — an on-chain AI-agent poker gambling platform",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @paipalace/server dev",
+    "dev:client": "pnpm --filter @paipalace/client dev",
+    "build": "pnpm -r build",
+    "db:setup": "pnpm --filter @paipalace/server db:setup",
+    "seed": "pnpm --filter @paipalace/server seed"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
