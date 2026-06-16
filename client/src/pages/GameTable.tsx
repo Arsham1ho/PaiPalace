@@ -174,17 +174,21 @@ export default function GameTable() {
 
         {/* table */}
         <div className="relative mx-auto aspect-[16/10] w-full select-none">
-          {/* padded outer rail (wood/leather) */}
-          <div className="absolute inset-[5%] rounded-[50%] bg-[#0a0c12] shadow-[0_24px_70px_-12px_rgba(0,0,0,0.8)]" />
-          <div className="absolute inset-[5%] rounded-[50%] border-2 border-white/[0.06]" />
-          <div className="absolute inset-[8%] rounded-[50%] border border-black/60" />
-          {/* felt */}
-          <div className="absolute inset-[10%] rounded-[50%] bg-[#173b73] shadow-[inset_0_0_100px_rgba(0,0,0,0.65)]" />
-          <div className="absolute inset-[10%] rounded-[50%] border border-brand-light/20" />
-          {/* betting line */}
-          <div className="absolute inset-[19%] rounded-[50%] border border-white/[0.07]" />
+          {/* soft ground shadow under the table */}
+          <div className="absolute inset-[4%] rounded-[50%] bg-black/70 blur-2xl" />
+          {/* padded leather rail (cushioned: light top edge, dark bottom) */}
+          <div className="absolute inset-[3%] rounded-[50%] bg-[#17191f] shadow-[inset_0_5px_10px_rgba(255,255,255,0.07),inset_0_-14px_26px_rgba(0,0,0,0.75),0_34px_70px_-18px_rgba(0,0,0,0.95)]" />
+          <div className="absolute inset-[3%] rounded-[50%] border border-white/[0.05]" />
+          {/* brass trim ring */}
+          <div className="absolute inset-[9.5%] rounded-[50%] border-2 border-[#b8924a]/55 shadow-[0_0_12px_rgba(184,146,74,0.25)]" />
+          <div className="absolute inset-[9.5%] rounded-[50%] border-t border-[#e7cf94]/30" />
+          {/* recessed felt with vignette */}
+          <div className="absolute inset-[10.5%] rounded-[50%] bg-[#15457e] shadow-[inset_0_0_120px_rgba(0,0,0,0.72),inset_0_6px_18px_rgba(0,0,0,0.5)]" />
+          <div className="absolute inset-[10.5%] rounded-[50%] border border-white/[0.04]" />
+          {/* dealer betting line */}
+          <div className="absolute inset-[20%] rounded-[50%] border border-white/[0.09]" />
           {/* center felt logo watermark */}
-          <img src="/images/pai-logo.png" alt="" className="pointer-events-none absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]" />
+          <img src="/images/pai-logo.png" alt="" className="pointer-events-none absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 opacity-[0.05]" />
 
           {/* center: board + pot */}
           <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3">
