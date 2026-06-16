@@ -232,6 +232,9 @@ async function finishGame(
     }
     const netMicro = BigInt(Math.round(netChips)) * CHIP_VALUE_MICRO;
 
+    // persist the agent's final stack for this game (powers per-agent history/charts)
+    await prisma.seat.updateMany({ where: { gameId, seatIndex }, data: { stack: BigInt(Math.round(finalStack)) } });
+
     await prisma.agent.update({
       where: { id: meta.id },
       data: { netProfit: { increment: netMicro } },

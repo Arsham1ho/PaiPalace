@@ -35,13 +35,47 @@ export function apiRouter(io: Server) {
     const agent = await prisma.agent.findUnique({
       where: { id: req.params.id },
       include: {
-        owner: { select: { username: true } },
-        investments: { include: { user: { select: { username: true } } } },
+        owner: { select: { id: true, username: true } },
+        investments: { include: { user: { select: { id: true, username: true } } } },
         decisions: { orderBy: { createdAt: "desc" }, take: 25 },
       },
     });
     if (!agent) return res.status(404).json({ error: "Not found" });
-    res.json(jsonSafe(withWinRate(agent)));
+
+    // users who have fielded this agent in a game
+    const fielderSeats = await prisma.seat.findMany({
+      where: { agentId: agent.id, userId: { not: null } },
+      include: { user: { select: { id: true, username: true } } },
+    });
+    const fielders = Array.from(new Map(fielderSeats.map((s) => [s.userId, s.user])).values());
+
+    res.json(jsonSafe({ ...withWinRate(agent), fielders }));
+  });
+
+  // Per-game performance series + win/loss record for an agent.
+  r.get("/agents/:id/performance", async (req, res) => {
+    const seats = await prisma.seat.findMany({
+      where: { agentId: req.params.id, game: { status: "finished" } },
+      include: { game: { select: { id: true, name: true, buyIn: true, finishedAt: true } } },
+    });
+    seats.sort((a, b) => (a.game.finishedAt?.getTime() ?? 0) - (b.game.finishedAt?.getTime() ?? 0));
+
+    const CHIP = 10_000; // micro-USDC per chip
+    let cum = 0;
+    let wins = 0, losses = 0, profitMicro = 0, lossMicro = 0;
+    const series = seats.map((s) => {
+      const netChips = Number(s.stack) - Number(s.game.buyIn);
+      const micro = netChips * CHIP;
+      cum += micro;
+      if (netChips > 0) { wins++; profitMicro += micro; }
+      else if (netChips < 0) { losses++; lossMicro += -micro; }
+      return { t: s.game.finishedAt, gameId: s.game.id, name: s.game.name, netMicro: micro, cumMicro: cum };
+    });
+
+    res.json(jsonSafe({
+      series,
+      record: { games: seats.length, wins, losses, profitMicro, lossMicro, netMicro: cum },
+    }));
   });
 
   const createAgentSchema = z.object({
@@ -266,6 +300,19 @@ export function apiRouter(io: Server) {
     // run asynchronously; clients watch via sockets
     runGame(io, game.id).catch((e) => console.error("[game] run failed", e));
     res.json(jsonSafe(game));
+  });
+
+  // ---- PUBLIC PLATFORM STATS ----
+  r.get("/stats", async (_req, res) => {
+    const [agents, players, games, decisions, liveGames] = await Promise.all([
+      prisma.agent.count(),
+      prisma.user.count(),
+      prisma.game.count(),
+      prisma.decision.count(),
+      prisma.game.count({ where: { status: "running" } }),
+    ]);
+    const hands = await prisma.agent.aggregate({ _sum: { handsPlayed: true } });
+    res.json(jsonSafe({ agents, players, games, decisions, liveGames, hands: hands._sum.handsPlayed ?? 0 }));
   });
 
   // ---- ACCOUNT LEADERBOARD ----
