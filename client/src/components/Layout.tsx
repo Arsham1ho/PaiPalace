@@ -33,22 +33,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-full">
       <header className="sticky top-0 z-30 border-b border-ink-700/70 bg-ink-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/images/pai-logo.png" alt="PaiPalace" className="h-9 w-9 rounded-full" />
-            <span className="text-xl font-bold tracking-tight">
+        <div className="mx-auto flex max-w-7xl items-center gap-5 px-4 py-4">
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src="/images/pai-logo.png" alt="PaiPalace" className="h-11 w-11 rounded-full" />
+            <span className="text-2xl font-bold tracking-tight">
               Pai<span className="brand-accent">Palace</span>
             </span>
           </Link>
 
-          <nav className="ml-6 hidden items-center gap-6 md:flex">
+          <nav className="ml-8 hidden items-center gap-8 md:flex">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  `text-[15px] font-medium tracking-tight transition ${
+                  `text-base font-medium tracking-tight transition ${
                     isActive ? "text-white" : "text-slate-400 hover:text-white"
                   }`
                 }
@@ -58,7 +58,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ))}
             {user?.isAdmin && (
               <NavLink to="/admin" className={({ isActive }) =>
-                `text-[15px] font-medium tracking-tight transition ${isActive ? "text-brand-light" : "text-brand-light/80 hover:text-brand-light"}`}>
+                `text-base font-medium tracking-tight transition ${isActive ? "text-brand-light" : "text-brand-light/80 hover:text-brand-light"}`}>
                 Admin
               </NavLink>
             )}
@@ -69,15 +69,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <>
                 <div className="hidden items-center gap-5 sm:flex">
                   <Link to="/portfolio" className="text-center leading-tight">
-                    <div className="text-xs text-slate-400">Portfolio</div>
-                    <div className="tabular text-sm font-bold text-up">{usd(portfolioValue ?? user.balance)}</div>
+                    <div className="text-[13px] text-slate-400">Portfolio</div>
+                    <div className="tabular text-base font-bold text-up">{usd(portfolioValue ?? user.balance)}</div>
                   </Link>
                   <Link to="/wallet" className="text-center leading-tight">
-                    <div className="text-xs text-slate-400">Cash</div>
-                    <div className="tabular text-sm font-bold text-up">{usd(user.balance)}</div>
+                    <div className="text-[13px] text-slate-400">Cash</div>
+                    <div className="tabular text-base font-bold text-up">{usd(user.balance)}</div>
                   </Link>
                 </div>
-                <button onClick={() => setDepositOpen(true)} className="btn-primary !px-4 !py-2 text-sm">Deposit</button>
+                <button onClick={() => setDepositOpen(true)} className="btn-primary !px-5 !py-2.5 text-base">Deposit</button>
 
                 <div className="hidden h-6 w-px bg-ink-700 sm:block" />
 
@@ -87,8 +87,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     className="flex items-center gap-1.5 rounded-full transition hover:opacity-90"
                     aria-label="Account menu"
                   >
-                    <img src={userAvatar(user.username)} alt={user.username} className="h-9 w-9 rounded-full border border-ink-700 bg-ink-800" />
-                    <ChevronDown size={16} className="text-slate-400" />
+                    <img src={userAvatar(user.username)} alt={user.username} className="h-10 w-10 rounded-full border border-ink-700 bg-ink-800" />
+                    <ChevronDown size={18} className="text-slate-400" />
                   </button>
                   {profileOpen && (
                     <>
@@ -136,8 +136,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </>
             ) : (
               <>
-                <Link to="/login" className="btn-ghost !px-3 !py-1.5 text-xs">Sign in</Link>
-                <Link to="/register" className="btn-primary !px-3 !py-1.5 text-xs">Get started</Link>
+                <Link to="/login" className="btn-ghost !px-4 !py-2 text-sm">Sign in</Link>
+                <Link to="/register" className="btn-primary !px-4 !py-2 text-sm">Get started</Link>
               </>
             )}
             <button className="md:hidden btn-ghost !px-2 !py-1.5" onClick={() => setMenu((m) => !m)}>☰</button>
