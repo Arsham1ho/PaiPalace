@@ -66,7 +66,7 @@ export default function ProfileDetail() {
                 <Tooltip contentStyle={{ background: "#13151d", border: "1px solid #2d3340", borderRadius: 12, color: "#e2e8f0" }}
                   formatter={(v: any) => [usdPlain(Number(v)), "Value"]} labelFormatter={() => ""} />
                 <ReferenceLine y={0} stroke="#3a4150" />
-                <Area type="monotone" dataKey="value" stroke="#2f6bff" strokeWidth={2} fill="#2f6bff" fillOpacity={0.15} />
+                <Area type="monotone" dataKey="value" stroke="#3a6ad0" strokeWidth={2} fill="#3a6ad0" fillOpacity={0.15} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (

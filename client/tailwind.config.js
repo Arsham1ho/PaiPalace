@@ -13,11 +13,11 @@ export default {
           700: "#222632",
           600: "#2d3340",
         },
-        // Primary brand color — blue
+        // Primary brand color — a calmer, refined blue
         brand: {
-          DEFAULT: "#2f6bff",
-          light: "#5b8cff",
-          dark: "#1e4fd6",
+          DEFAULT: "#3a6ad0",
+          light: "#7aa0ec",
+          dark: "#284f9e",
         },
         // secondary accent
         pai: {
@@ -30,7 +30,7 @@ export default {
         sans: ['"Plus Jakarta Sans"', "Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 24px -4px rgba(47,107,255,0.45)",
+        glow: "0 0 22px -6px rgba(58,106,208,0.35)",
       },
     },
   },

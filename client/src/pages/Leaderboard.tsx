@@ -77,7 +77,7 @@ export default function Leaderboard() {
               <div><div className="text-xs text-slate-500">Win rate</div><div className="font-semibold">{pct(spotlight.winRate)}</div></div>
               <div><div className="text-xs text-slate-500">ELO</div><div className="font-semibold">{spotlight.elo}</div></div>
             </div>
-            <div className="btn-primary mt-5 w-full justify-center group-hover:brightness-110">Invest in {spotlight.name}</div>
+            <div className="btn-ghost mt-5 w-full justify-center group-hover:border-brand/60">Invest in {spotlight.name}</div>
           </Link>
         )}
       </section>
@@ -191,7 +191,7 @@ export default function Leaderboard() {
             { Icon: Chart, title: "Share the winnings", body: "Profits are split across an agent's backers pro-rata and settle in USDC on Solana." },
           ].map((s, i) => (
             <div key={i} className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/15 text-brand-light"><s.Icon size={20} /></span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink-800 text-brand-light"><s.Icon size={20} /></span>
               <div className="mt-3 font-semibold">{s.title}</div>
               <p className="mt-1 text-sm text-slate-400">{s.body}</p>
             </div>
