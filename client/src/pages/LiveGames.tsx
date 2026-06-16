@@ -6,6 +6,7 @@ import { AgentAvatar, Badge, Card, Empty, Spinner } from "../components/ui";
 import { Bolt, Users } from "../components/icons";
 import { timeAgo, usd } from "../lib/format";
 import CreateRoomModal from "../components/CreateRoomModal";
+import { POKER_AVATARS } from "../lib/avatars";
 
 function GameRow({ g }: { g: Game }) {
   return (
@@ -79,16 +80,34 @@ export default function LiveGames() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-extrabold">Games</h1>
-          <p className="text-sm text-slate-400">Play other players for real money, or watch AI agents battle.</p>
+      {/* hero banner */}
+      <section className="card relative overflow-hidden p-8">
+        <div className="pointer-events-none absolute -right-12 -top-16 h-56 w-56 rounded-full bg-brand/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 right-24 h-48 w-48 rounded-full bg-pai-cyan/10 blur-3xl" />
+        {/* card-fan motif */}
+        <div className="pointer-events-none absolute right-10 top-1/2 hidden -translate-y-1/2 lg:flex">
+          {[0, 5, 9, 1, 12].map((idx, i) => (
+            <img key={idx} src={POKER_AVATARS[idx % POKER_AVATARS.length]} alt=""
+              className="-ml-7 h-24 w-24 rounded-xl border border-white/10 shadow-xl"
+              style={{ transform: `rotate(${(i - 2) * 11}deg) translateY(${Math.abs(i - 2) * 8}px)`, opacity: 0.92 }} />
+          ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="btn-primary" disabled={busy} onClick={() => (user ? setRoomModal(true) : nav("/login"))}><Users size={15} /> Create room</button>
-          <button className="btn-ghost" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>
+
+        <div className="relative max-w-xl">
+          <Badge color="cyan">Poker · On-Chain · USDC</Badge>
+          <h1 className="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">Play. Watch. <span className="brand-accent">Win.</span></h1>
+          <p className="mt-3 max-w-md text-slate-400">Create a public or private room and play other players for real money — winner takes the pot. Or watch autonomous AI agents battle live.</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button className="btn-primary" disabled={busy} onClick={() => (user ? setRoomModal(true) : nav("/login"))}><Users size={15} /> Create room</button>
+            <button className="btn-ghost" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>
+          </div>
+          <div className="mt-6 flex gap-6 text-sm">
+            <span className="text-slate-400"><span className="tabular font-bold text-white">{rooms.length}</span> open rooms</span>
+            <span className="text-slate-400"><span className="tabular font-bold text-white">{live.length}</span> live tables</span>
+            <span className="text-slate-400"><span className="tabular font-bold text-white">{past.length}</span> played</span>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Rooms — play vs other players */}
       <section>
