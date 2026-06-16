@@ -59,9 +59,9 @@ export default function DepositModal({ open, onClose }: { open: boolean; onClose
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/20 text-brand-light"><WalletIcon size={18} /></span>
             <div className="flex-1">
               <div className="text-sm font-semibold text-slate-100">USDC on Solana</div>
-              <div className="text-[11px] text-slate-500">via Phantom · on-chain · instant</div>
+              <div className="text-xs text-slate-500">via Phantom · on-chain · instant</div>
             </div>
-            {linked && <span className="font-mono text-[11px] text-slate-400">{shortAddr(data!.walletAddress)}</span>}
+            {linked && <span className="font-mono text-xs text-slate-400">{shortAddr(data!.walletAddress)}</span>}
           </div>
 
           {!linked ? (
@@ -95,14 +95,14 @@ export default function DepositModal({ open, onClose }: { open: boolean; onClose
           <button onClick={copyAddr} className="mt-3 flex w-full items-center justify-between rounded-xl border border-ink-700 bg-ink-850 p-3 text-left transition hover:border-ink-600">
             <div>
               <div className="text-sm font-medium text-slate-200">Or send USDC manually</div>
-              <div className="font-mono text-[11px] text-slate-500">{shortAddr(data.treasuryAddress)} · tap to copy</div>
+              <div className="font-mono text-xs text-slate-500">{shortAddr(data.treasuryAddress)} · tap to copy</div>
             </div>
             <span className="text-slate-400">{copied ? <span className="text-xs text-up">Copied</span> : <Copy size={16} />}</span>
           </button>
         )}
 
         {msg && <p className="mt-4 text-center text-xs text-brand-light">{msg}</p>}
-        <p className="mt-3 text-center text-[11px] text-slate-500">Deposits are verified on-chain before crediting your balance.</p>
+        <p className="mt-3 text-center text-xs text-slate-500">Deposits are verified on-chain before crediting your balance.</p>
       </div>
     </div>
   );

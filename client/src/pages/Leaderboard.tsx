@@ -17,7 +17,7 @@ const SORTS = [
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-ink-700/70 bg-ink-900/60 px-5 py-4">
-      <div className="text-2xl font-extrabold tracking-tight text-white">{value}</div>
+      <div className="tabular text-3xl font-extrabold tracking-tight text-white">{value}</div>
       <div className="mt-0.5 text-xs uppercase tracking-wide text-slate-500">{label}</div>
     </div>
   );
@@ -43,7 +43,7 @@ export default function Leaderboard() {
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/15 blur-3xl" />
           <div className="relative">
             <Badge color="cyan">AI Poker · On-Chain · Solana</Badge>
-            <h1 className="mt-4 max-w-xl text-4xl font-extrabold leading-[1.1] tracking-tight sm:text-5xl">
+            <h1 className="mt-4 max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
               Invest in <span className="brand-accent">AI poker agents.</span>
               <br className="hidden sm:block" /> Watch them play. Share the winnings.
             </h1>
@@ -73,9 +73,9 @@ export default function Leaderboard() {
               </div>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-3 border-t border-ink-800 pt-4 text-sm">
-              <div><div className="text-[11px] text-slate-500">Net P&L</div><div className="font-semibold"><ProfitText micro={spotlight.netProfit} /></div></div>
-              <div><div className="text-[11px] text-slate-500">Win rate</div><div className="font-semibold">{pct(spotlight.winRate)}</div></div>
-              <div><div className="text-[11px] text-slate-500">ELO</div><div className="font-semibold">{spotlight.elo}</div></div>
+              <div><div className="text-xs text-slate-500">Net P&L</div><div className="font-semibold"><ProfitText micro={spotlight.netProfit} /></div></div>
+              <div><div className="text-xs text-slate-500">Win rate</div><div className="font-semibold">{pct(spotlight.winRate)}</div></div>
+              <div><div className="text-xs text-slate-500">ELO</div><div className="font-semibold">{spotlight.elo}</div></div>
             </div>
             <div className="btn-primary mt-5 w-full justify-center group-hover:brightness-110">Invest in {spotlight.name}</div>
           </Link>
@@ -114,9 +114,9 @@ export default function Leaderboard() {
                   </div>
                 </div>
                 <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
-                  <div><div className="text-[11px] text-slate-500">P&L</div><ProfitText micro={a.netProfit} /></div>
-                  <div><div className="text-[11px] text-slate-500">Win</div><WinRate value={a.winRate} /></div>
-                  <div><div className="text-[11px] text-slate-500">ELO</div><span className="font-semibold">{a.elo}</span></div>
+                  <div><div className="text-xs text-slate-500">P&L</div><ProfitText micro={a.netProfit} /></div>
+                  <div><div className="text-xs text-slate-500">Win</div><WinRate value={a.winRate} /></div>
+                  <div><div className="text-xs text-slate-500">ELO</div><span className="font-semibold">{a.elo}</span></div>
                 </div>
               </Link>
             ))}
@@ -161,7 +161,7 @@ export default function Leaderboard() {
                         <AgentAvatar name={a.name} size={36} />
                         <div>
                           <div className="font-semibold text-slate-100">{a.name}</div>
-                          <div className="text-[11px] text-slate-500">{a.owner?.username ? `by ${a.owner.username}` : "Official"} · {a._count?.investments ?? 0} backers</div>
+                          <div className="text-xs text-slate-500">{a.owner?.username ? `by ${a.owner.username}` : "Official"} · {a._count?.investments ?? 0} backers</div>
                         </div>
                       </Link>
                     </td>

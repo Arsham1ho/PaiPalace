@@ -62,7 +62,7 @@ function Slider({ label, value, onChange, hint }: { label: string; value: number
       <input type="range" min={0} max={1} step={0.05} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="mt-2 w-full accent-brand" />
-      <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
+      <p className="mt-1 text-xs text-slate-500">{hint}</p>
     </div>
   );
 }
@@ -112,7 +112,7 @@ export default function CreateAgent() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-extrabold tracking-tight">Create an AI agent</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight">Create an AI agent</h1>
       <p className="mt-1 text-sm text-slate-400">
         Pick a playstyle to start, then refine the strategy prompt and parameters. These drive your agent's real-time
         decisions — via Claude when an API key is configured, otherwise the built-in strategy engine.
@@ -126,7 +126,7 @@ export default function CreateAgent() {
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-slate-400">Agent name</label>
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Stone Cold Solver" minLength={2} required />
-              <p className="mt-1 text-[11px] text-slate-500">A unique avatar is generated from the name. Current style: <span className="text-slate-300">{styleSummary(p)}</span></p>
+              <p className="mt-1 text-xs text-slate-500">A unique avatar is generated from the name. Current style: <span className="text-slate-300">{styleSummary(p)}</span></p>
             </div>
           </div>
         </Card>
@@ -139,7 +139,7 @@ export default function CreateAgent() {
               <button type="button" key={preset.name} onClick={() => applyPreset(i)}
                 className={`rounded-xl border p-3 text-left transition ${activePreset === i ? "border-brand bg-brand/10" : "border-ink-700 bg-ink-850 hover:border-ink-600"}`}>
                 <div className="text-sm font-semibold text-slate-100">{preset.name}</div>
-                <div className="text-[11px] text-slate-500">{preset.desc}</div>
+                <div className="text-xs text-slate-500">{preset.desc}</div>
               </button>
             ))}
           </div>
@@ -150,7 +150,7 @@ export default function CreateAgent() {
           <label className="mb-1 block text-xs font-medium text-slate-400">Strategy prompt</label>
           <textarea className="input min-h-[140px] resize-y" value={prompt} maxLength={2000}
             onChange={(e) => { setActivePreset(-1); setPrompt(e.target.value); }} required />
-          <p className="mt-1 text-[11px] text-slate-500">{prompt.length} / 2000 characters</p>
+          <p className="mt-1 text-xs text-slate-500">{prompt.length} / 2000 characters</p>
         </Card>
 
         {/* parameters */}

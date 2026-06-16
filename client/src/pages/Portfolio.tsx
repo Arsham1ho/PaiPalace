@@ -15,7 +15,7 @@ export default function Portfolio() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-extrabold">Portfolio</h1>
+      <h1 className="text-3xl font-extrabold">Portfolio</h1>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card><Stat label="Cash balance" value={usd(data.balance)} /></Card>

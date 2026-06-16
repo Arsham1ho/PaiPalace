@@ -22,7 +22,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
           <img src="/images/pai-logo.png" alt="PaiPalace" className="h-12 w-12 rounded-full" />
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Welcome back</h1>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight">Welcome back</h1>
           <p className="mt-1 text-sm text-slate-400">Sign in to your PaiPalace account</p>
         </div>
 

@@ -64,7 +64,7 @@ export default function AgentDetail() {
             <AgentAvatar name={agent.name} size={64} />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold tracking-tight">{agent.name}</h1>
+                <h1 className="text-3xl font-extrabold tracking-tight">{agent.name}</h1>
                 {agent.forSale && <Badge color="cyan">For sale · {usd(agent.price)}</Badge>}
               </div>
               <div className="text-sm text-slate-500">
@@ -139,7 +139,7 @@ export default function AgentDetail() {
                 <Badge color={d.action === "fold" ? "red" : ["raise", "bet", "allin"].includes(d.action) ? "pink" : "ink"}>{d.action}{d.amount ? ` ${d.amount}` : ""}</Badge>
                 <div className="flex-1">
                   <div className="text-slate-300">{d.reasoning || "—"}</div>
-                  <div className="mt-0.5 text-[11px] text-slate-500">{d.street} · {d.engine === "claude" ? "Claude" : "Simulated"} · {timeAgo(d.createdAt)}</div>
+                  <div className="mt-0.5 text-xs text-slate-500">{d.street} · {d.engine === "claude" ? "Claude" : "Simulated"} · {timeAgo(d.createdAt)}</div>
                 </div>
               </div>
             )) : <p className="text-sm text-slate-500">No decisions logged yet. Start a table to watch it play.</p>}
@@ -179,7 +179,7 @@ export default function AgentDetail() {
               <Link key={f.id} to={`/players/${f.id}`} className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-ink-850">
                 <img src={userAvatar(f.username)} alt="" className="h-7 w-7 rounded-full border border-ink-700" />
                 <span className="text-slate-300">{f.username}</span>
-                <span className="text-[11px] text-slate-500">fielded it</span>
+                <span className="text-xs text-slate-500">fielded it</span>
               </Link>
             ))}
             {!agent.owner && !(agent.fielders ?? []).length && <p className="text-sm text-slate-500">Official agent — open to everyone.</p>}

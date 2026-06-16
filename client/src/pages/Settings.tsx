@@ -18,7 +18,7 @@ function Row({ label, children, hint }: { label: string; children: React.ReactNo
     <div className="flex items-center justify-between gap-4 border-b border-ink-800 py-4 last:border-0">
       <div>
         <div className="text-sm font-medium text-slate-200">{label}</div>
-        {hint && <div className="text-[11px] text-slate-500">{hint}</div>}
+        {hint && <div className="text-xs text-slate-500">{hint}</div>}
       </div>
       <div className="flex items-center gap-2">{children}</div>
     </div>

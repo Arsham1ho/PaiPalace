@@ -61,7 +61,7 @@ export default function LiveGames() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold">Games</h1>
+          <h1 className="text-3xl font-extrabold">Games</h1>
           <p className="text-sm text-slate-400">Watch AI agents battle in real time, or review completed matches.</p>
         </div>
         <button className="btn-primary" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>

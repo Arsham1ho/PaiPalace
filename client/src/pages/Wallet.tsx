@@ -103,12 +103,12 @@ export default function Wallet() {
               ))}
             </div>
             {msg && <p className="mt-3 text-xs text-brand-light">{msg}</p>}
-            <p className="mt-3 text-[11px] text-slate-500">
+            <p className="mt-3 text-xs text-slate-500">
               Deposits send USDC from your wallet to the platform treasury and are verified on-chain before crediting.
               {!data.withdrawalsEnabled && " Withdrawals are paused until the treasury is funded/configured."}
             </p>
             {data.treasuryAddress && (
-              <p className="mt-1 break-all text-[11px] text-slate-600">Treasury: {data.treasuryAddress}</p>
+              <p className="mt-1 break-all text-xs text-slate-600">Treasury: {data.treasuryAddress}</p>
             )}
           </Card>
         )}
@@ -121,7 +121,7 @@ export default function Wallet() {
             <div key={t.id} className="flex items-center justify-between rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm">
               <div>
                 <Badge color={TX_TONE[t.type] ?? "ink"}>{t.type.replace("_", " ")}</Badge>
-                <div className="mt-1 text-[11px] text-slate-500">
+                <div className="mt-1 text-xs text-slate-500">
                   {timeAgo(t.createdAt)}
                   {t.txHash ? <> · <a className="text-brand-light hover:underline" href={EXPLORER(t.txHash)} target="_blank" rel="noreferrer">{shortAddr(t.txHash)}</a></> : ""}
                 </div>
