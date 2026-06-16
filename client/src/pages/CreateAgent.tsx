@@ -137,7 +137,7 @@ export default function CreateAgent() {
         {/* identity */}
         <Card>
           <div className="flex items-center gap-4">
-            <img src={previewSrc} alt="avatar preview" className="h-16 w-16 shrink-0 rounded-xl border border-ink-700 bg-ink-800 object-cover" />
+            <img src={previewSrc} alt="avatar preview" className="h-20 w-20 shrink-0 rounded-xl border border-ink-700 bg-ink-800 object-cover" />
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-slate-400">Agent name</label>
               <div className="relative">
@@ -155,19 +155,19 @@ export default function CreateAgent() {
           {/* agent image — two buttons; grid only shows on "Choose image" */}
           <div className="mt-5">
             <div className="flex items-center gap-2">
-              <span className="mr-auto text-xs font-medium text-slate-400">Agent image</span>
-              <button type="button" onClick={() => setShowImages((v) => !v)} className="btn-ghost !px-3 !py-1.5 text-xs">
+              <span className="mr-auto text-sm font-semibold text-slate-300">Agent image</span>
+              <button type="button" onClick={() => setShowImages((v) => !v)} className="btn-ghost !px-4 !py-2 text-sm">
                 {showImages ? "Close" : "Choose image"}
               </button>
-              <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost !px-3 !py-1.5 text-xs">Upload</button>
-              <button type="button" onClick={() => setAvatar(randomPokerAvatar())} className="btn-ghost !px-3 !py-1.5 text-xs">Shuffle</button>
+              <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost !px-4 !py-2 text-sm">Upload</button>
+              <button type="button" onClick={() => setAvatar(randomPokerAvatar())} className="btn-ghost !px-4 !py-2 text-sm">Shuffle</button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
             </div>
             {showImages && (
               <div className="mt-3 space-y-3">
                 <div>
-                  <div className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-500">Poker & casino</div>
-                  <div className="grid grid-cols-8 gap-2">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Poker & casino</div>
+                  <div className="grid grid-cols-5 gap-3 sm:grid-cols-6">
                     {POKER_AVATARS.map((url) => (
                       <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
                         className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
@@ -177,8 +177,8 @@ export default function CreateAgent() {
                   </div>
                 </div>
                 <div>
-                  <div className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-500">Robots</div>
-                  <div className="grid grid-cols-8 gap-2">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Robots</div>
+                  <div className="grid grid-cols-5 gap-3 sm:grid-cols-6">
                     {ROBOT_AVATARS.map((url) => (
                       <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
                         className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
