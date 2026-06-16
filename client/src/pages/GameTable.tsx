@@ -109,7 +109,7 @@ export default function GameTable() {
         <div className="mb-3 flex items-center justify-between">
           <div>
             <Link to="/live" className="text-xs text-slate-500 hover:text-slate-300">← Games</Link>
-            <h1 className="text-xl font-extrabold">{game.name}</h1>
+            <h1 className="flex items-center gap-2 text-xl font-extrabold">{game.name} {game.practice && <Badge color="cyan">Practice · no real P&L</Badge>}</h1>
           </div>
           {status === "running" ? <Badge color="pink">● LIVE · hand {table?.handNumber ?? game.handNumber}</Badge>
             : status === "finished" ? <Badge color="green">Finished</Badge> : <Badge color="ink">Waiting…</Badge>}

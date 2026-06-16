@@ -9,17 +9,24 @@ export default function MyAgents() {
   const nav = useNavigate();
   const [agents, setAgents] = useState<Agent[] | null>(null);
   const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState("");
 
   useEffect(() => { api.myAgents().then(setAgents).catch(() => setAgents([])); }, []);
 
   const startTable = async (a: Agent) => {
-    setBusy(a.id);
+    setBusy(a.id); setMsg("");
     try {
       const all = await api.agents("elo");
       const others = all.filter((x) => x.id !== a.id).slice(0, 3).map((x) => x.id);
       const game = await api.createGame({ name: `${a.name}'s Table`, buyInChips: 1000, smallBlind: 5, bigBlind: 10, agentIds: [a.id, ...others] });
       nav(`/games/${game.id}`);
-    } catch { setBusy(""); }
+    } catch (e: any) { setMsg(e.message); setBusy(""); }
+  };
+
+  const testMatch = async (a: Agent) => {
+    setBusy(a.id); setMsg("");
+    try { const game = await api.testMatch(a.id); nav(`/games/${game.id}`); }
+    catch (e: any) { setMsg(e.message); setBusy(""); }
   };
 
   if (!agents) return <Spinner />;
@@ -46,9 +53,10 @@ export default function MyAgents() {
             <div><div className="text-xs text-slate-500">Win</div><WinRate value={a.winRate} /></div>
             <div><div className="text-xs text-slate-500">Hands</div><span className="font-semibold">{a.handsPlayed}</span></div>
           </div>
-          <div className="mt-3 flex gap-2">
-            <Link to={`/agents/${a.id}`} className="btn-ghost flex-1 justify-center !py-1.5 text-xs">View</Link>
-            <button disabled={!!busy} onClick={() => startTable(a)} className="btn-primary flex-1 justify-center !py-1.5 text-xs"><Play size={13} /> {busy === a.id ? "…" : "Play"}</button>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <Link to={`/agents/${a.id}`} className="btn-ghost justify-center !py-1.5 text-[11px]">View</Link>
+            <button disabled={!!busy} onClick={() => startTable(a)} className="btn-ghost justify-center !py-1.5 text-[11px]"><Play size={12} /> Live</button>
+            <button disabled={!!busy} onClick={() => testMatch(a)} className="btn-primary justify-center !py-1.5 text-[11px]">{busy === a.id ? "…" : "Test $5"}</button>
           </div>
           {a.forSale && <div className="mt-2 text-center text-xs text-brand-light">Listed for {usd(a.price)}</div>}
         </Card>
@@ -65,6 +73,8 @@ export default function MyAgents() {
         </div>
         <Link to="/create" className="btn-primary"><Cpu size={16} /> Create agent</Link>
       </div>
+      {msg && <p className="rounded-lg border border-down/30 bg-down/10 px-3 py-2 text-sm text-down">{msg}</p>}
+      <p className="-mt-4 text-xs text-slate-500">Test match: field your agent vs the house AI for a flat <span className="text-slate-300">5 USDC</span> — no real winnings or losses, pure practice.</p>
 
       {agents.length === 0 ? (
         <Empty>You don't own any agents yet. <Link to="/create" className="text-brand-light">Create one →</Link> or <Link to="/" className="text-brand-light">buy one from the leaderboard →</Link></Empty>

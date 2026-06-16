@@ -36,6 +36,7 @@ export interface CreateGameInput {
   smallBlind: number;
   bigBlind: number;
   agents: { agentId: string; userId?: string | null }[];
+  practice?: boolean;
 }
 
 export async function createGame(input: CreateGameInput) {
@@ -46,6 +47,7 @@ export async function createGame(input: CreateGameInput) {
       smallBlind: BigInt(input.smallBlind),
       bigBlind: BigInt(input.bigBlind),
       buyIn: BigInt(input.buyInChips),
+      practice: input.practice ?? false,
     },
   });
   for (let i = 0; i < input.agents.length; i++) {
@@ -186,23 +188,25 @@ export async function runGame(io: Server, gameId: string, opts?: { delayMs?: num
       state: revealAll(state),
     }));
 
-    // update agent stats
-    for (const s of state.seats) {
-      const won = result.winners.some((w) => w.seatIndex === s.seatIndex);
-      await prisma.agent.update({
-        where: { id: s.agentId },
-        data: {
-          handsPlayed: { increment: 1 },
-          handsWon: won ? { increment: 1 } : undefined,
-        },
-      });
+    // update agent stats (skipped for practice/test matches)
+    if (!game.practice) {
+      for (const s of state.seats) {
+        const won = result.winners.some((w) => w.seatIndex === s.seatIndex);
+        await prisma.agent.update({
+          where: { id: s.agentId },
+          data: {
+            handsPlayed: { increment: 1 },
+            handsWon: won ? { increment: 1 } : undefined,
+          },
+        });
+      }
     }
 
     dealer = (dealer + 1) % stacks.length;
     await sleep(delay * 3.5); // let spectators see the showdown result
   }
 
-  await finishGame(io, gameId, stacks, metaBySeat, buyIn);
+  await finishGame(io, gameId, stacks, metaBySeat, buyIn, game.practice);
 }
 
 function dealerIndexIn(seeds: SeatSeed[], dealerSeatIndex: number): number {
@@ -216,9 +220,11 @@ async function finishGame(
   stacks: number[],
   metaBySeat: Map<number, AgentMeta>,
   buyIn: number,
+  practice = false,
 ) {
   // settle economics: each agent's net chip P&L converts to money and is
   // credited to the fielding user + shared across that agent's investors.
+  // Practice (test) matches skip ALL economic settlement and stat changes.
   let winnerAgent: string | null = null;
   let best = -1;
   const summary: any[] = [];
@@ -234,6 +240,9 @@ async function finishGame(
 
     // persist the agent's final stack for this game (powers per-agent history/charts)
     await prisma.seat.updateMany({ where: { gameId, seatIndex }, data: { stack: BigInt(Math.round(finalStack)) } });
+
+    summary.push({ agentId: meta.id, agentName: meta.name, finalStack, netChips });
+    if (practice) continue; // sandbox: no P&L, no stats
 
     await prisma.agent.update({
       where: { id: meta.id },
@@ -276,12 +285,10 @@ async function finishGame(
         });
       }
     }
-
-    summary.push({ agentId: meta.id, agentName: meta.name, finalStack, netChips });
   }
 
   // Real multiplayer ELO update from the finishing order (pairwise, K=24).
-  await updateElo(summary);
+  if (!practice) await updateElo(summary);
 
   await prisma.game.update({
     where: { id: gameId },

@@ -91,6 +91,7 @@ model Game {
   buyIn       BigInt
   potTotal    BigInt   @default(0)
   handNumber  Int      @default(0)
+  practice    Boolean  @default(false) // test match: flat fee, no real P&L applied
   winnerAgent String?
   createdAt   DateTime @default(now())
   finishedAt  DateTime?

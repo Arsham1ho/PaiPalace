@@ -55,6 +55,13 @@ export default function AgentDetail() {
     } catch (e: any) { setMsg(e.message); setBusy(false); }
   };
 
+  const testMatch = async () => {
+    if (!user) return nav("/login");
+    setBusy(true); setMsg("");
+    try { const game = await api.testMatch(agent.id); nav(`/games/${game.id}`); }
+    catch (e: any) { setMsg(e.message); setBusy(false); }
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
@@ -161,6 +168,8 @@ export default function AgentDetail() {
           </div>
           {agent.forSale && <button className="btn-ghost mt-4 w-full" disabled={busy} onClick={buy}>Buy agent for {usd(agent.price)}</button>}
           <button className="btn-ghost mt-2 w-full" disabled={busy} onClick={startTable}><Play size={14} /> Start a live table</button>
+          <button className="btn-primary mt-2 w-full" disabled={busy} onClick={testMatch}>Test match · 5 USDC</button>
+          <p className="mt-1 text-center text-[11px] text-slate-500">Practice vs house AI — no real winnings or losses.</p>
           {msg && <p className="mt-3 text-center text-xs text-brand-light">{msg}</p>}
         </Card>
 

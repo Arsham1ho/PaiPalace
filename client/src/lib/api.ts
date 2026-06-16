@@ -63,6 +63,7 @@ export const api = {
   games: (status?: string) => request<Game[]>(`/api/games${status ? `?status=${status}` : ""}`),
   game: (id: string) => request<GameDetail>(`/api/games/${id}`),
   createGame: (body: any) => request<Game>("/api/games", { method: "POST", body: JSON.stringify(body) }),
+  testMatch: (agentId: string) => request<Game>("/api/games/test", { method: "POST", body: JSON.stringify({ agentId }) }),
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),
@@ -163,6 +164,7 @@ export interface Game {
   bigBlind: number;
   buyIn: number;
   handNumber: number;
+  practice?: boolean;
   winnerAgent?: string | null;
   createdAt: string;
   finishedAt?: string | null;
