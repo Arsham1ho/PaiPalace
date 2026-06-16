@@ -7,6 +7,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
   const nav = useNavigate();
   const [agents, setAgents] = useState<Agent[] | null>(null);
   const [agentId, setAgentId] = useState("");
+  const [name, setName] = useState("");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [password, setPassword] = useState("");
   const [entryUsd, setEntryUsd] = useState(5);
@@ -32,7 +33,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
     if (!agentId) { setMsg("Pick one of your agents to field."); return; }
     setBusy(true); setMsg("");
     try {
-      const { id } = await api.createRoom({ visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind });
+      const { id } = await api.createRoom({ name: name.trim() || undefined, visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind });
       onClose(); nav(`/rooms/${id}`);
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };
@@ -52,6 +53,12 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
           </div>
         ) : (
           <div className="mt-5 space-y-4">
+            {/* room name */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Room name</label>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="e.g. Friday Night Showdown" />
+            </div>
+
             {/* visibility */}
             <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
               {(["public", "private"] as const).map((v) => (
