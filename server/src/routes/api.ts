@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma, jsonSafe, fromUsd } from "../db.js";
 import { authMiddleware, adminMiddleware, type AuthedRequest } from "../auth.js";
-import { createGame, runGame, liveGames } from "../game/manager.js";
+import { createGame, runGame, liveGames, room as roomChannel } from "../game/manager.js";
 import { improvePrompt } from "../agents/improve.js";
 import {
   isValidSolanaAddress,
@@ -463,7 +463,7 @@ export function apiRouter(io: Server) {
   });
 
   r.post("/rooms", authMiddleware, async (req: AuthedRequest, res) => {
-    const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10 } = req.body ?? {};
+    const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10, name } = req.body ?? {};
     if (!["public", "private"].includes(visibility)) return res.status(400).json({ error: "Invalid visibility" });
     const entry = fromUsd(Number(entryUsd) || 0);
     const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
@@ -474,9 +474,10 @@ export function apiRouter(io: Server) {
     let code = genCode();
     for (let i = 0; i < 5; i++) { if (!(await prisma.game.findUnique({ where: { roomCode: code } }))) break; code = genCode(); }
     const passwordHash = visibility === "private" && password ? await bcrypt.hash(String(password), 10) : null;
+    const roomName = String(name ?? "").trim().slice(0, 40) || `${user.username}'s Room`;
     const game = await prisma.game.create({
       data: {
-        name: `${user.username}'s Room`, isRoom: true, status: "lobby", visibility, roomCode: code, passwordHash,
+        name: roomName, isRoom: true, status: "lobby", visibility, roomCode: code, passwordHash,
         hostId: user.id, smallBlind: BigInt(smallBlind), bigBlind: BigInt(bigBlind),
         buyIn: BigInt(ROOM_BUYIN), entryMicro: entry, prizePool: entry,
       },
@@ -541,6 +542,7 @@ export function apiRouter(io: Server) {
       prisma.game.update({ where: { id: room.id }, data: { prizePool: { increment: room.entryMicro } } }),
       prisma.transaction.create({ data: { userId: user.id, type: "room_entry", amount: room.entryMicro, meta: JSON.stringify({ gameId: room.id }) } }),
     ]);
+    io.to(roomChannel(room.id)).emit("room:update", { id: room.id }); // notify lobby viewers
     res.json({ ok: true });
   });
 

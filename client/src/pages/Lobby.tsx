@@ -4,6 +4,7 @@ import { api, type RoomDetail, type Agent } from "../lib/api";
 import { AgentAvatar, Badge, Card, Spinner } from "../components/ui";
 import { Copy } from "../components/icons";
 import { usd } from "../lib/format";
+import { getSocket } from "../lib/socket";
 
 export default function Lobby() {
   const { id } = useParams();
@@ -25,7 +26,23 @@ export default function Lobby() {
     load();
     api.myAgents().then((a) => { setAgents(a); if (a[0]) setAgentId(a[0].id); }).catch(() => {});
     const t = setInterval(load, 3000);
-    return () => clearInterval(t);
+
+    // real-time: refresh when players join, jump to the table when the host starts
+    const socket = getSocket();
+    socket.emit("game:watch", id);
+    const onUpdate = () => load();
+    const onStart = () => nav(`/games/${id}`);
+    socket.on("room:update", onUpdate);
+    socket.on("game:start", onStart);
+    socket.on("game:hand_start", onStart);
+
+    return () => {
+      clearInterval(t);
+      socket.emit("game:leave", id);
+      socket.off("room:update", onUpdate);
+      socket.off("game:start", onStart);
+      socket.off("game:hand_start", onStart);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
