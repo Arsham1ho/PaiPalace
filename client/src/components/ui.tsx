@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cardParts, pct, usd } from "../lib/format";
+import { pokerAvatarFor } from "../lib/avatars";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`card p-5 ${className}`}>{children}</div>;
@@ -25,9 +26,9 @@ export function WinRate({ value }: { value: number }) {
   return <span className="font-semibold text-slate-200">{pct(value)}</span>;
 }
 
-// Deterministic generated avatar image (no emoji) from the agent name.
+// Deterministic poker/gambling-themed avatar from the agent name.
 export function agentAvatarUrl(name: string) {
-  return `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(name)}&backgroundColor=1e4fd6,2f6bff,22d3ee&radius=18`;
+  return pokerAvatarFor(name || "agent");
 }
 
 export function AgentAvatar({ avatar, name, size = 40 }: { avatar?: string | null; name: string; size?: number }) {

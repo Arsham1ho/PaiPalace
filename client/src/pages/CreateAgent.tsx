@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card, agentAvatarUrl } from "../components/ui";
+import { Card } from "../components/ui";
 import { Cpu } from "../components/icons";
+import { POKER_AVATARS, randomPokerAvatar } from "../lib/avatars";
 
 interface Params {
   aggression: number; bluffFreq: number; tightness: number; riskTolerance: number;
@@ -28,10 +29,6 @@ const PRESETS: { name: string; desc: string; prompt: string; params: Params }[] 
   { name: "Maniac", desc: "Max aggression, high variance", prompt: "You are a maniac. Raise and re-raise relentlessly with a huge range, bluff constantly, and gamble for stacks. Maximum pressure, maximum variance — you live for the action.", params: { aggression: 0.95, bluffFreq: 0.55, tightness: 0.1, riskTolerance: 0.95, betSizing: 0.9, contBet: 0.85, callingTendency: 0.4, trapping: 0.05 } },
   { name: "Calling Station", desc: "Sticky, hard to bluff", prompt: "You are a calling station. Rarely fold once involved, call down with marginal hands, and let opponents bluff into you. Seldom raise — your edge is catching bluffs.", params: { aggression: 0.3, bluffFreq: 0.05, tightness: 0.3, riskTolerance: 0.5, betSizing: 0.45, contBet: 0.4, callingTendency: 0.85, trapping: 0.3 } },
 ];
-
-// 20 preset avatars (deterministic generated robots)
-const AVATAR_SEEDS = ["ace", "bluff", "chip", "dealer", "river", "flop", "turn", "shark", "rocket", "fox", "bull", "ghost", "ninja", "viper", "comet", "atlas", "echo", "nova", "pixel", "rogue"];
-const presetAvatar = (seed: string) => `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${seed}&radius=18&backgroundColor=284f9e,3a6ad0,22d3ee,1b2330`;
 
 function Slider({ label, value, onChange, hint }: { label: string; value: number; onChange: (v: number) => void; hint: string }) {
   return (
@@ -74,7 +71,8 @@ export default function CreateAgent() {
   const nav = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState<string | null>(null); // null = generated from name
+  const [avatar, setAvatar] = useState<string>(() => randomPokerAvatar()); // random poker image by default
+  const [showImages, setShowImages] = useState(false);
   const [nameStatus, setNameStatus] = useState<"idle" | "checking" | "ok" | "taken">("idle");
   const [activePreset, setActivePreset] = useState(0);
   const [prompt, setPrompt] = useState(PRESETS[0].prompt);
@@ -117,7 +115,7 @@ export default function CreateAgent() {
     if (nameStatus === "taken") { setErr("That agent name is taken. Choose a unique name."); return; }
     setErr(""); setBusy(true);
     try {
-      const agent = await api.createAgent({ name: name.trim(), avatar: avatar ?? undefined, prompt, params: p, forSale, priceUsd });
+      const agent = await api.createAgent({ name: name.trim(), avatar, prompt, params: p, forSale, priceUsd });
       nav(`/agents/${agent.id}`);
     } catch (e: any) {
       setErr(typeof e.message === "string" ? e.message : "Failed to create agent");
@@ -125,7 +123,7 @@ export default function CreateAgent() {
     }
   };
 
-  const previewSrc = avatar ?? agentAvatarUrl(name || "new agent");
+  const previewSrc = avatar;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -154,35 +152,27 @@ export default function CreateAgent() {
             </div>
           </div>
 
-          {/* avatar picker */}
+          {/* agent image — two buttons; grid only shows on "Choose image" */}
           <div className="mt-5">
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-400">Agent image</label>
-              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-brand-light hover:underline">Upload your own</button>
+            <div className="flex items-center gap-2">
+              <span className="mr-auto text-xs font-medium text-slate-400">Agent image</span>
+              <button type="button" onClick={() => setShowImages((v) => !v)} className="btn-ghost !px-3 !py-1.5 text-xs">
+                {showImages ? "Close" : "Choose image"}
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()} className="btn-ghost !px-3 !py-1.5 text-xs">Upload</button>
+              <button type="button" onClick={() => setAvatar(randomPokerAvatar())} className="btn-ghost !px-3 !py-1.5 text-xs">Shuffle</button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
             </div>
-            <div className="grid grid-cols-7 gap-2 sm:grid-cols-11">
-              {/* generated-from-name option */}
-              <button type="button" onClick={() => setAvatar(null)} title="Generated from name"
-                className={`overflow-hidden rounded-lg border ${avatar === null ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
-                <img src={agentAvatarUrl(name || "new agent")} alt="" className="aspect-square w-full" />
-              </button>
-              {AVATAR_SEEDS.map((seed) => {
-                const url = presetAvatar(seed);
-                return (
-                  <button type="button" key={seed} onClick={() => setAvatar(url)} title={seed}
+            {showImages && (
+              <div className="mt-3 grid grid-cols-8 gap-2">
+                {POKER_AVATARS.map((url) => (
+                  <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
                     className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
                     <img src={url} alt="" className="aspect-square w-full" />
                   </button>
-                );
-              })}
-              {/* uploaded preview tile */}
-              {avatar?.startsWith("data:") && (
-                <div className="overflow-hidden rounded-lg border border-brand ring-1 ring-brand">
-                  <img src={avatar} alt="uploaded" className="aspect-square w-full object-cover" />
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
 
