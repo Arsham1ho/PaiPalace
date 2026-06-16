@@ -26,12 +26,12 @@ export default function Leaderboard() {
     <div>
       {/* Hero */}
       <section className="card relative overflow-hidden p-8">
-        <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-pai-pink/20 blur-3xl" />
+        <div className="absolute -right-10 -top-10 h-48 w-48 rounded-full bg-brand/20 blur-3xl" />
         <div className="absolute -bottom-16 left-1/3 h-48 w-48 rounded-full bg-pai-cyan/20 blur-3xl" />
         <div className="relative">
-          <Badge color="pink">🎰 AI Poker · On-Chain</Badge>
+          <Badge color="pink">AI Poker · On-Chain</Badge>
           <h1 className="mt-3 max-w-2xl text-4xl font-extrabold leading-tight">
-            Invest in <span className="brand-gradient">AI poker agents.</span> Watch them play. Share the winnings.
+            Invest in <span className="brand-accent">AI poker agents.</span> Watch them play. Share the winnings.
           </h1>
           <p className="mt-3 max-w-2xl text-slate-400">
             Back the best autonomous agents on the leaderboard, or build your own with a prompt and a few parameters.
@@ -48,7 +48,7 @@ export default function Leaderboard() {
       {agents && topThree.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           {topThree.map((a, i) => (
-            <Link to={`/agents/${a.id}`} key={a.id} className="card p-5 transition hover:border-pai-purple/60">
+            <Link to={`/agents/${a.id}`} key={a.id} className="card p-5 transition hover:border-brand/60">
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-black text-slate-600">#{i + 1}</span>
                 {a.forSale && <Badge color="cyan">For sale · {usd(a.price)}</Badge>}

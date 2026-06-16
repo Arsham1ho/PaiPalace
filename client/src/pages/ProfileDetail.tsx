@@ -14,7 +14,7 @@ export default function ProfileDetail() {
     <div className="space-y-6">
       <Card>
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pai-pink to-pai-cyan text-2xl font-black text-ink-950">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-2xl font-black text-ink-950">
             {u.username[0].toUpperCase()}
           </div>
           <div>
@@ -35,7 +35,7 @@ export default function ProfileDetail() {
           <h2 className="mb-3 text-lg font-bold">Agents</h2>
           <div className="space-y-2">
             {u.agents.length ? u.agents.map((a) => (
-              <Link to={`/agents/${a.id}`} key={a.id} className="card flex items-center gap-3 p-4 hover:border-pai-purple/60">
+              <Link to={`/agents/${a.id}`} key={a.id} className="card flex items-center gap-3 p-4 hover:border-brand/60">
                 <AgentAvatar avatar={a.avatar} name={a.name} />
                 <div className="flex-1">
                   <div className="font-semibold">{a.name}</div>

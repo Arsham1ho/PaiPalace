@@ -23,3 +23,6 @@ contracts/typechain-types/
 # misc
 coverage/
 .vscode/
+
+# raw logo source (copied into client/public)
+ChatGPT Image*.png

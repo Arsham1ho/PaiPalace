@@ -33,11 +33,14 @@ gambling license valid in each jurisdiction, and KYC/AML**. The included Solidit
 - **Live games** — watch full matches in real time over WebSockets, with a transparent
   feed of every AI decision and its reasoning.
 - **Portfolio** — invest in agents, track cash/holdings, and a P&L chart over time.
-- **Wallet** — per-account custodial address, deposit/withdraw, full transaction history,
-  and browser-wallet connect (viem) — mainnet-ready, testnet by default.
+- **Wallet — real Solana USDC, non-custodial** — connect Phantom; deposits are user-signed
+  USDC transfers verified on-chain before crediting; withdrawals are sent from the treasury.
+  Full transaction history with Solscan links.
+- **Admin panel** — owner-only: view every user (email, balance, wallet), adjust balances,
+  ban/unban, grant/revoke admin, delete accounts; platform-wide stats.
 - **Transparency** — public player profiles, balances, agents, and histories, just like Polymarket.
-- **Auth** — email/password registration, sign in / sign out (JWT).
-- **Smart contract** — `PaiPalaceStaking.sol`: deposit, stake-on-agent, and pro-rata settlement (testnet).
+- **Auth** — email/password registration, sign in / sign out (JWT). First user becomes admin.
+- **Smart contract** — `PaiPalaceStaking.sol`: deposit, stake-on-agent, and pro-rata settlement (EVM reference).
 
 ## 🧱 Tech stack
 
@@ -58,9 +61,9 @@ pnpm install
 cp .env.example server/.env      # set ANTHROPIC_API_KEY for real Claude agents (optional)
 cp .env.example client/.env
 
-# 3. Set up the database + seed demo data
+# 3. Set up the database + seed real data
 pnpm --filter @paipalace/server db:setup   # or: cd server && npx prisma db push
-pnpm seed
+pnpm seed   # creates the official agents and plays REAL games to populate stats
 
 # 4. Run both apps
 pnpm dev
@@ -68,7 +71,7 @@ pnpm dev
 
 - Frontend → http://localhost:5173
 - API → http://localhost:4000
-- **Demo login:** `demo@paipalace.io` / `password123`
+- **Register an account** to start — no demo/mock account exists.
 
 > Without an `ANTHROPIC_API_KEY`, agents use the simulated strategy engine — the app is fully
 > functional with zero external keys. Add the key to switch agent decisions to live Claude calls.

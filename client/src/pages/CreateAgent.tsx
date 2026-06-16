@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
-import { Card } from "../components/ui";
-
-const EMOJIS = ["🤖", "🦅", "🪨", "🎭", "💥", "🧮", "🛡️", "🚤", "🦈", "🃏", "👑", "🔥", "🐉", "⚡"];
+import { Card, agentAvatarUrl } from "../components/ui";
 
 function Slider({ label, value, onChange, hint }: { label: string; value: number; onChange: (v: number) => void; hint: string }) {
   return (
@@ -14,7 +12,7 @@ function Slider({ label, value, onChange, hint }: { label: string; value: number
       </div>
       <input type="range" min={0} max={1} step={0.05} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-full accent-pai-pink" />
+        className="mt-2 w-full accent-brand" />
       <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
     </div>
   );
@@ -23,7 +21,6 @@ function Slider({ label, value, onChange, hint }: { label: string; value: number
 export default function CreateAgent() {
   const nav = useNavigate();
   const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("🤖");
   const [prompt, setPrompt] = useState("You are a disciplined, math-driven poker player. Play tight-aggressive, value bet strong hands, and only bluff when the story makes sense. Avoid big gambles without an edge.");
   const [p, setP] = useState({ aggression: 0.5, bluffFreq: 0.15, tightness: 0.6, riskTolerance: 0.5 });
   const [forSale, setForSale] = useState(false);
@@ -35,7 +32,7 @@ export default function CreateAgent() {
     e.preventDefault();
     setErr(""); setBusy(true);
     try {
-      const agent = await api.createAgent({ name, avatar, prompt, params: p, forSale, priceUsd });
+      const agent = await api.createAgent({ name, prompt, params: p, forSale, priceUsd });
       nav(`/agents/${agent.id}`);
     } catch (e: any) {
       setErr(typeof e.message === "string" ? e.message : "Failed to create agent");
@@ -53,21 +50,16 @@ export default function CreateAgent() {
 
       <form onSubmit={submit} className="mt-6 space-y-6">
         <Card>
-          <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
-            <div>
-              <label className="mb-1 block text-xs text-slate-400">Avatar</label>
-              <div className="grid w-44 grid-cols-7 gap-1">
-                {EMOJIS.map((e) => (
-                  <button type="button" key={e} onClick={() => setAvatar(e)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-lg ${avatar === e ? "bg-pai-purple/40 ring-1 ring-pai-purple" : "bg-ink-800"}`}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
+          <div className="flex items-center gap-4">
+            <img
+              src={agentAvatarUrl(name || "new agent")}
+              alt="avatar preview"
+              className="h-16 w-16 rounded-xl border border-ink-700 bg-ink-800"
+            />
+            <div className="flex-1">
               <label className="mb-1 block text-xs text-slate-400">Agent name</label>
               <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Stone Cold Solver" minLength={2} required />
+              <p className="mt-1 text-[11px] text-slate-500">A unique avatar is generated from the name.</p>
             </div>
           </div>
         </Card>
@@ -88,7 +80,7 @@ export default function CreateAgent() {
 
         <Card>
           <label className="flex items-center gap-3">
-            <input type="checkbox" checked={forSale} onChange={(e) => setForSale(e.target.checked)} className="h-4 w-4 accent-pai-pink" />
+            <input type="checkbox" checked={forSale} onChange={(e) => setForSale(e.target.checked)} className="h-4 w-4 accent-brand" />
             <span className="text-sm">List this agent for sale on the marketplace</span>
           </label>
           {forSale && (

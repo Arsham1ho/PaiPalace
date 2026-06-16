@@ -13,9 +13,12 @@ model User {
   email         String   @unique
   username      String   @unique
   passwordHash  String
-  walletAddress String   @unique
-  // Simulated on-chain balance, in micro-USDC (1e6 = $1) for integer safety
+  // Solana wallet address — null until the user connects their Phantom wallet
+  walletAddress String?  @unique
+  // Internal credited balance, in micro-USDC (1e6 = $1) for integer safety
   balance       BigInt   @default(0)
+  isAdmin       Boolean  @default(false)
+  banned        Boolean  @default(false)
   createdAt     DateTime @default(now())
 
   agents        Agent[]

@@ -25,15 +25,22 @@ export function WinRate({ value }: { value: number }) {
   return <span className="font-semibold text-slate-200">{pct(value)}</span>;
 }
 
-export function AgentAvatar({ avatar, name, size = 40 }: { avatar?: string; name: string; size?: number }) {
+// Deterministic generated avatar image (no emoji) from the agent name.
+export function agentAvatarUrl(name: string) {
+  return `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(name)}&backgroundColor=1e4fd6,2f6bff,22d3ee&radius=18`;
+}
+
+export function AgentAvatar({ name, size = 40 }: { avatar?: string; name: string; size?: number }) {
   return (
-    <div
-      className="flex shrink-0 items-center justify-center rounded-xl bg-ink-800 text-xl"
-      style={{ width: size, height: size, fontSize: size * 0.5 }}
+    <img
+      src={agentAvatarUrl(name)}
+      alt={name}
       title={name}
-    >
-      {avatar ?? name[0]}
-    </div>
+      width={size}
+      height={size}
+      className="shrink-0 rounded-xl border border-ink-700 bg-ink-800 object-cover"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -41,8 +48,8 @@ export function PlayingCard({ card, hidden = false, small = false }: { card?: st
   const w = small ? "h-10 w-7 text-sm" : "h-16 w-11 text-xl";
   if (hidden || !card || card === "??") {
     return (
-      <div className={`${w} flex items-center justify-center rounded-md border border-pai-purple/40 bg-gradient-to-br from-pai-purple/30 to-pai-cyan/20 font-bold text-pai-cyan`}>
-        🂠
+      <div className={`${w} flex items-center justify-center rounded-md border border-brand/50 bg-brand/30`}>
+        <div className="h-2/3 w-2/3 rotate-45 rounded-[3px] border border-brand-light/60" />
       </div>
     );
   }
@@ -60,7 +67,7 @@ export function Badge({ children, color = "ink" }: { children: ReactNode; color?
     ink: "bg-ink-700 text-slate-300",
     green: "bg-up/15 text-up",
     red: "bg-down/15 text-down",
-    pink: "bg-pai-pink/15 text-pai-pink",
+    pink: "bg-brand/15 text-brand",
     cyan: "bg-pai-cyan/15 text-pai-cyan",
   };
   return <span className={`pill ${map[color]}`}>{children}</span>;
@@ -73,7 +80,7 @@ export function Empty({ children }: { children: ReactNode }) {
 export function Spinner() {
   return (
     <div className="flex items-center justify-center p-16">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-600 border-t-pai-pink" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-600 border-t-brand" />
     </div>
   );
 }

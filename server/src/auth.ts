@@ -1,7 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import crypto from "node:crypto";
 import { z } from "zod";
 import { prisma, jsonSafe } from "./db.js";
 import { env } from "./env.js";
@@ -14,13 +13,6 @@ export interface AuthedRequest extends Request {
 
 function sign(userId: string) {
   return jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: "30d" });
-}
-
-// Generate a deterministic-looking EVM wallet address for the account.
-// (Real wallet linking happens client-side via wallet connect; this is the
-// custodial app-wallet address shown for deposits/withdrawals.)
-function newWalletAddress(): string {
-  return "0x" + crypto.randomBytes(20).toString("hex");
 }
 
 export function authMiddleware(req: AuthedRequest, res: Response, next: NextFunction) {
@@ -49,13 +41,17 @@ authRouter.post("/register", async (req, res) => {
   const exists = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
   if (exists) return res.status(409).json({ error: "Email or username already in use" });
 
+  // Only the designated owner email becomes admin. Everyone else is a normal user.
+  const isAdmin = env.ADMIN_EMAIL !== "" && email.toLowerCase() === env.ADMIN_EMAIL.toLowerCase();
+
   const user = await prisma.user.create({
     data: {
       email,
       username,
       passwordHash: await bcrypt.hash(password, 10),
-      walletAddress: newWalletAddress(),
+      walletAddress: null, // linked when the user connects their Phantom wallet
       balance: 0n,
+      isAdmin,
     },
   });
   res.json({ token: sign(user.id), user: publicUser(user) });
@@ -70,6 +66,7 @@ authRouter.post("/login", async (req, res) => {
   if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
+  if (user.banned) return res.status(403).json({ error: "This account has been suspended." });
   res.json({ token: sign(user.id), user: publicUser(user) });
 });
 
@@ -86,6 +83,14 @@ export function publicUser(u: any) {
     username: u.username,
     walletAddress: u.walletAddress,
     balance: u.balance,
+    isAdmin: u.isAdmin,
     createdAt: u.createdAt,
   });
+}
+
+// Guard for admin-only routes. Use after authMiddleware.
+export async function adminMiddleware(req: AuthedRequest, res: Response, next: NextFunction) {
+  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!user?.isAdmin) return res.status(403).json({ error: "Admin only" });
+  next();
 }

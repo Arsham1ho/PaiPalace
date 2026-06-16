@@ -64,7 +64,16 @@ export async function createGame(input: CreateGameInput) {
   return game;
 }
 
-export async function runGame(io: Server, gameId: string) {
+// A no-op Socket.IO stand-in for headless (seed / offline) game runs.
+const stubIo = { to: () => ({ emit: () => {} }) } as unknown as Server;
+
+/** Run a game with no sockets and no delays — used for seeding real data. */
+export function runGameHeadless(gameId: string) {
+  return runGame(stubIo, gameId, { delayMs: 0 });
+}
+
+export async function runGame(io: Server, gameId: string, opts?: { delayMs?: number }) {
+  const delay = opts?.delayMs ?? ACTION_DELAY_MS;
   const game = await prisma.game.findUnique({
     where: { id: gameId },
     include: { seats: { include: { agent: true }, orderBy: { seatIndex: "asc" } } },
@@ -110,7 +119,7 @@ export async function runGame(io: Server, gameId: string) {
     liveGames.set(gameId, { state, name: game.name });
     await prisma.game.update({ where: { id: gameId }, data: { handNumber } });
     io.to(room(gameId)).emit("game:hand_start", jsonSafe({ gameId, state: redact(state) }));
-    await sleep(ACTION_DELAY_MS);
+    await sleep(delay);
 
     // betting loop
     while (!handOver(state)) {
@@ -118,7 +127,7 @@ export async function runGame(io: Server, gameId: string) {
         if (bettingRoundComplete(state)) advanceStreet(state);
         else break;
         io.to(room(gameId)).emit("game:street", jsonSafe({ gameId, state: redact(state) }));
-        await sleep(ACTION_DELAY_MS);
+        await sleep(delay);
         continue;
       }
 
@@ -154,12 +163,12 @@ export async function runGame(io: Server, gameId: string) {
         engine: action.engine,
         state: redact(state),
       }));
-      await sleep(ACTION_DELAY_MS);
+      await sleep(delay);
 
       if (bettingRoundComplete(state) && !handOver(state)) {
         advanceStreet(state);
         io.to(room(gameId)).emit("game:street", jsonSafe({ gameId, state: redact(state) }));
-        await sleep(ACTION_DELAY_MS);
+        await sleep(delay);
       }
     }
 
@@ -190,7 +199,7 @@ export async function runGame(io: Server, gameId: string) {
     }
 
     dealer = (dealer + 1) % stacks.length;
-    await sleep(ACTION_DELAY_MS);
+    await sleep(delay * 3.5); // let spectators see the showdown result
   }
 
   await finishGame(io, gameId, stacks, metaBySeat, buyIn);
@@ -268,12 +277,40 @@ async function finishGame(
     summary.push({ agentId: meta.id, agentName: meta.name, finalStack, netChips });
   }
 
+  // Real multiplayer ELO update from the finishing order (pairwise, K=24).
+  await updateElo(summary);
+
   await prisma.game.update({
     where: { id: gameId },
     data: { status: "finished", winnerAgent, finishedAt: new Date() },
   });
   liveGames.delete(gameId);
   io.to(room(gameId)).emit("game:finished", jsonSafe({ gameId, winnerAgent, summary }));
+}
+
+// Standard pairwise multiplayer ELO from finishing chip counts.
+async function updateElo(summary: { agentId: string; finalStack: number }[]) {
+  if (summary.length < 2) return;
+  const agents = await prisma.agent.findMany({
+    where: { id: { in: summary.map((s) => s.agentId) } },
+    select: { id: true, elo: true },
+  });
+  const eloOf = new Map(agents.map((a) => [a.id, a.elo]));
+  const K = 24;
+  const deltas = new Map<string, number>();
+  for (const a of summary) {
+    let delta = 0;
+    for (const b of summary) {
+      if (a.agentId === b.agentId) continue;
+      const ea = 1 / (1 + 10 ** ((eloOf.get(b.agentId)! - eloOf.get(a.agentId)!) / 400));
+      const sa = a.finalStack > b.finalStack ? 1 : a.finalStack === b.finalStack ? 0.5 : 0;
+      delta += K * (sa - ea);
+    }
+    deltas.set(a.agentId, Math.round(delta / (summary.length - 1)));
+  }
+  for (const [id, d] of deltas) {
+    await prisma.agent.update({ where: { id }, data: { elo: (eloOf.get(id) ?? 1500) + d } });
+  }
 }
 
 function safeParams(raw: string): AgentParams {
@@ -286,18 +323,21 @@ function safeParams(raw: string): AgentParams {
 
 export const room = (gameId: string) => `game:${gameId}`;
 
-// Hide hole cards from spectators during play (transparency at showdown only).
-function redact(state: HandState): HandState {
+// PaiPalace is fully transparent: agents are autonomous, so all hole cards are
+// shown live. We also translate internal array indices (dealer/toAct) into the
+// stable seatIndex the client renders by, and surface the blind positions.
+function viewState(state: HandState, logLen = 12): any {
+  const n = state.seats.length;
+  const seatAt = (i: number) => state.seats[((i % n) + n) % n]?.seatIndex ?? -1;
   return {
     ...state,
-    seats: state.seats.map((s) => ({
-      ...s,
-      hole: s.folded ? [] : (["??", "??"] as any),
-    })),
-    log: state.log.slice(-12),
+    toAct: state.toAct >= 0 ? state.seats[state.toAct].seatIndex : -1,
+    dealerSeat: seatAt(state.dealer),
+    sbSeat: seatAt(state.dealer + 1),
+    bbSeat: seatAt(state.dealer + 2),
+    log: state.log.slice(-logLen),
   };
 }
 
-function revealAll(state: HandState): HandState {
-  return { ...state, log: state.log.slice(-16) };
-}
+const redact = (state: HandState) => viewState(state, 12);
+const revealAll = (state: HandState) => viewState(state, 16);

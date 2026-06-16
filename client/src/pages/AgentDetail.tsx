@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api, type Agent } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { AgentAvatar, Badge, Card, ProfitText, Spinner, Stat, WinRate } from "../components/ui";
+import { Play } from "../components/icons";
 import { usd, pct, timeAgo } from "../lib/format";
 
 const PARAM_LABELS: Record<string, string> = {
@@ -98,7 +99,7 @@ export default function AgentDetail() {
                   <span>{label}</span><span>{pct(params[k] ?? 0)}</span>
                 </div>
                 <div className="mt-1 h-2 w-full rounded-full bg-ink-700">
-                  <div className="h-2 rounded-full" style={{ width: `${(params[k] ?? 0) * 100}%`, backgroundImage: "linear-gradient(90deg,#ff3df0,#1fd3ff)" }} />
+                  <div className="h-2 rounded-full bg-brand" style={{ width: `${(params[k] ?? 0) * 100}%` }} />
                 </div>
               </div>
             ))}
@@ -116,7 +117,7 @@ export default function AgentDetail() {
                 <div className="flex-1">
                   <div className="text-slate-300">{d.reasoning || "—"}</div>
                   <div className="mt-0.5 text-[11px] text-slate-500">
-                    {d.street} · {d.engine === "claude" ? "🧠 Claude" : "⚙️ simulated"} · {timeAgo(d.createdAt)}
+                    {d.street} · {d.engine === "claude" ? "Claude" : "Simulated"} · {timeAgo(d.createdAt)}
                   </div>
                 </div>
               </div>
@@ -144,7 +145,7 @@ export default function AgentDetail() {
             </button>
           )}
           <button className="btn-ghost mt-2 w-full" disabled={busy} onClick={startTable}>
-            🎲 Start a live table
+            <Play size={14} /> Start a live table
           </button>
           {msg && <p className="mt-3 text-center text-xs text-pai-cyan">{msg}</p>}
         </Card>

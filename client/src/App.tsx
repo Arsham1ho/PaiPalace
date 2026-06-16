@@ -10,6 +10,7 @@ import LiveGames from "./pages/LiveGames";
 import GameTable from "./pages/GameTable";
 import Players from "./pages/Players";
 import ProfileDetail from "./pages/ProfileDetail";
+import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -17,6 +18,12 @@ function Protected({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
   if (loading) return null;
   return user ? children : <Navigate to="/login" replace />;
+}
+
+function AdminOnly({ children }: { children: JSX.Element }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user?.isAdmin ? children : <Navigate to="/" replace />;
 }
 
 export default function App() {
@@ -32,6 +39,7 @@ export default function App() {
         <Route path="/games/:id" element={<GameTable />} />
         <Route path="/players" element={<Players />} />
         <Route path="/players/:id" element={<ProfileDetail />} />
+        <Route path="/admin" element={<AdminOnly><Admin /></AdminOnly>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<Navigate to="/" replace />} />

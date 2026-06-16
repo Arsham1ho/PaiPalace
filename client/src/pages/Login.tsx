@@ -5,8 +5,8 @@ import { useAuth } from "../context/AuthContext";
 export default function Login() {
   const { login } = useAuth();
   const nav = useNavigate();
-  const [email, setEmail] = useState("demo@paipalace.io");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -41,7 +41,7 @@ export default function Login() {
           <button className="btn-primary w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
         <p className="mt-4 text-center text-xs text-slate-500">
-          Demo account is prefilled. No account? <Link to="/register" className="text-pai-cyan">Create one</Link>
+          No account? <Link to="/register" className="text-pai-cyan">Create one</Link>
         </p>
       </div>
     </div>

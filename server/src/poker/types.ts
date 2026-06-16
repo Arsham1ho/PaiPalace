@@ -25,6 +25,7 @@ export interface SeatState {
   folded: boolean;
   allIn: boolean;
   acted: boolean; // has acted since the last aggressive action this street
+  lastAction?: { type: ActionType; amount: number }; // most recent action this street
   isWinner?: boolean;
 }
 
