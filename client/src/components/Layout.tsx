@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { usd, shortAddr } from "../lib/format";
 import { ChevronDown, Settings, UserIcon, LogOut, Chart, Wallet, Trophy, Cpu, Shield } from "./icons";
 import DepositModal from "./DepositModal";
+import WithdrawModal from "./WithdrawModal";
 
 const userAvatar = (seed: string) => `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(seed)}`;
 
@@ -21,6 +22,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [menu, setMenu] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [portfolioValue, setPortfolioValue] = useState<number | null>(null);
 
   useEffect(() => {
@@ -78,6 +80,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   </Link>
                 </div>
                 <button onClick={() => setDepositOpen(true)} className="btn-primary !px-5 !py-2.5 text-base">Deposit</button>
+                <button onClick={() => setWithdrawOpen(true)} className="hidden btn-ghost !px-4 !py-2.5 text-base sm:inline-flex">Withdraw</button>
 
                 <div className="hidden h-6 w-px bg-ink-700 sm:block" />
 
@@ -121,6 +124,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               <Icon size={18} className="text-slate-400" /> {label}
                             </button>
                           ))}
+                        </div>
+
+                        <div className="border-t border-ink-700 py-1.5">
+                          <button onClick={() => { setProfileOpen(false); setDepositOpen(true); }}
+                            className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition hover:bg-ink-800">
+                            <Wallet size={18} className="text-slate-400" /> Deposit
+                          </button>
+                          <button onClick={() => { setProfileOpen(false); setWithdrawOpen(true); }}
+                            className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition hover:bg-ink-800">
+                            <Chart size={18} className="text-slate-400" /> Withdraw
+                          </button>
                         </div>
 
                         <div className="border-t border-ink-700 pt-1.5">
@@ -176,6 +190,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </footer>
 
       {user && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
+      {user && <WithdrawModal open={withdrawOpen} onClose={() => setWithdrawOpen(false)} />}
     </div>
   );
 }
