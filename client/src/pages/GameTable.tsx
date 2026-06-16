@@ -5,6 +5,7 @@ import { getSocket } from "../lib/socket";
 import { AgentAvatar, Badge, Card, PlayingCard, Spinner } from "../components/ui";
 import { Volume, VolumeOff } from "../components/icons";
 import { play, isMuted, setMuted } from "../lib/sound";
+import { useAuth } from "../context/AuthContext";
 
 function Confetti() {
   const colors = ["#3a6ad0", "#22d3ee", "#26d07c", "#e0c64a", "#ffffff"];
@@ -68,7 +69,9 @@ const STREETS = ["preflop", "flop", "turn", "river"];
 
 export default function GameTable() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [game, setGame] = useState<GameDetail | null>(null);
+  const [feedFilter, setFeedFilter] = useState<"all" | "mine">("all");
   const [table, setTable] = useState<TableState | null>(null);
   const [feed, setFeed] = useState<FeedItem[]>([]);
   const [status, setStatus] = useState<string>("");
@@ -143,6 +146,9 @@ export default function GameTable() {
   const n = Math.max(seats.length, 2);
   const winnerOf = (si: number) => winners.find((w) => w.seatIndex === si);
   const streetIdx = STREETS.indexOf(table?.street ?? "preflop");
+  const myAgentNames = new Set((game.seats ?? []).filter((s: any) => s.userId && s.userId === user?.id).map((s: any) => s.agent?.name));
+  const hasMine = myAgentNames.size > 0;
+  const visibleFeed = feedFilter === "mine" ? feed.filter((f) => myAgentNames.has(f.agentName)) : feed;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -308,10 +314,18 @@ export default function GameTable() {
       {/* decision feed */}
       <div>
         <Card className="lg:sticky lg:top-20">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Live AI decisions</h2>
-          <p className="mt-1 text-xs text-slate-500">Every action and its reasoning — fully transparent.</p>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Live AI decisions</h2>
+            {hasMine && (
+              <div className="flex gap-1 rounded-lg bg-ink-850 p-0.5 text-xs">
+                <button onClick={() => setFeedFilter("all")} className={`rounded-md px-2.5 py-1 font-medium ${feedFilter === "all" ? "bg-ink-700 text-white" : "text-slate-400"}`}>All</button>
+                <button onClick={() => setFeedFilter("mine")} className={`rounded-md px-2.5 py-1 font-medium ${feedFilter === "mine" ? "bg-ink-700 text-white" : "text-slate-400"}`}>My agent</button>
+              </div>
+            )}
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{feedFilter === "mine" ? "Your agent's reasoning for every decision." : "Every action and its reasoning — fully transparent."}</p>
           <div className="mt-3 max-h-[64vh] space-y-2 overflow-y-auto pr-1">
-            {feed.length ? feed.map((f, i) => (
+            {visibleFeed.length ? visibleFeed.map((f, i) => (
               <div key={i} className={`rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm ${i === 0 ? "animate-fade" : ""}`}>
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2 font-semibold text-slate-200">
@@ -324,7 +338,7 @@ export default function GameTable() {
                 {f.reasoning && <p className="mt-1 text-xs text-slate-400">{f.reasoning}</p>}
                 <div className="mt-1 text-[11px] text-slate-600">{f.engine === "claude" ? "Claude" : "Simulated"}</div>
               </div>
-            )) : <p className="text-sm text-slate-500">Waiting for the action to begin…</p>}
+            )) : <p className="text-sm text-slate-500">{feedFilter === "mine" ? "No decisions from your agent yet." : "Waiting for the action to begin…"}</p>}
           </div>
         </Card>
       </div>
