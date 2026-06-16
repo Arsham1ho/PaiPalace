@@ -83,7 +83,7 @@ export default function ProfileDetail() {
             <div className="space-y-2">
               {u.agents.length ? u.agents.map((a) => (
                 <Link to={`/agents/${a.id}`} key={a.id} className="card flex items-center gap-3 p-4 hover:border-brand/60">
-                  <AgentAvatar name={a.name} />
+                  <AgentAvatar avatar={a.avatar} name={a.name} />
                   <div className="flex-1">
                     <div className="font-semibold">{a.name}</div>
                     <div className="text-xs text-slate-500">{a.handsPlayed} hands · ELO {a.elo}</div>
@@ -99,7 +99,7 @@ export default function ProfileDetail() {
             <div className="space-y-2">
               {u.investments.length ? u.investments.map((inv) => (
                 <Link to={`/agents/${inv.agent.id}`} key={inv.id} className="card flex items-center gap-3 p-4 hover:border-brand/60">
-                  <AgentAvatar name={inv.agent.name} />
+                  <AgentAvatar avatar={inv.agent.avatar} name={inv.agent.name} />
                   <div className="flex-1">
                     <div className="font-semibold">{inv.agent.name}</div>
                     <div className="text-xs text-slate-500">Staked {usd(inv.amount)}</div>

@@ -1,4 +1,5 @@
-// Non-custodial Solana wallet integration (Phantom) — USDC on mainnet.
+// Solana wallet integration — supports multiple injected wallets (Phantom,
+// Solflare, Backpack) for connecting + signing USDC deposits to the treasury.
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
@@ -14,30 +15,38 @@ const USDC_DECIMALS = 6;
 export const connection = new Connection(RPC, "confirmed");
 export const hasTreasury = TREASURY_STR.length > 0;
 
-function getProvider(): any {
+export type WalletKey = "phantom" | "solflare" | "backpack";
+export interface WalletOption { key: WalletKey; name: string; installed: boolean; url: string }
+
+function providerFor(key: WalletKey): any {
   const w = window as any;
-  const p = w.phantom?.solana ?? w.solana;
-  if (!p?.isPhantom) return null;
-  return p;
+  if (key === "phantom") return w.phantom?.solana?.isPhantom ? w.phantom.solana : (w.solana?.isPhantom ? w.solana : null);
+  if (key === "solflare") return w.solflare?.isSolflare ? w.solflare : null;
+  if (key === "backpack") return w.backpack?.isBackpack ? w.backpack : (w.xnft?.solana ?? null);
+  return null;
 }
 
-export function hasPhantom(): boolean {
-  return !!getProvider();
+export function walletOptions(): WalletOption[] {
+  return [
+    { key: "phantom", name: "Phantom", installed: !!providerFor("phantom"), url: "https://phantom.app/" },
+    { key: "solflare", name: "Solflare", installed: !!providerFor("solflare"), url: "https://solflare.com/" },
+    { key: "backpack", name: "Backpack", installed: !!providerFor("backpack"), url: "https://backpack.app/" },
+  ];
 }
 
-export async function connectPhantom(): Promise<string> {
-  const provider = getProvider();
-  if (!provider) throw new Error("Phantom wallet not found. Install it from phantom.app.");
+export async function connectWallet(key: WalletKey): Promise<string> {
+  const provider = providerFor(key);
+  if (!provider) throw new Error(`${key} wallet not found.`);
   const res = await provider.connect();
-  return res.publicKey.toString();
+  return (res?.publicKey ?? provider.publicKey).toString();
 }
 
-/** Build, sign (via Phantom) and send a USDC transfer to the treasury. Returns the tx signature. */
-export async function depositUsdc(amountUsd: number): Promise<string> {
-  const provider = getProvider();
-  if (!provider) throw new Error("Phantom wallet not found.");
+/** Build, sign (via the chosen wallet) and send a USDC transfer to the treasury. */
+export async function depositUsdc(key: WalletKey, amountUsd: number): Promise<string> {
+  const provider = providerFor(key);
+  if (!provider) throw new Error("Wallet not found.");
   if (!hasTreasury) throw new Error("Treasury address not configured.");
-  const owner = new PublicKey(provider.publicKey.toString());
+  const owner = new PublicKey((provider.publicKey ?? (await provider.connect()).publicKey).toString());
   const treasury = new PublicKey(TREASURY_STR);
 
   const fromAta = await getAssociatedTokenAddress(USDC, owner);
@@ -45,7 +54,6 @@ export async function depositUsdc(amountUsd: number): Promise<string> {
   const amountRaw = BigInt(Math.round(amountUsd * 10 ** USDC_DECIMALS));
 
   const tx = new Transaction().add(
-    // create the treasury's USDC token account if it doesn't exist yet (idempotent)
     createAssociatedTokenAccountIdempotentInstruction(owner, toAta, treasury, USDC),
     createTransferInstruction(fromAta, toAta, owner, amountRaw),
   );

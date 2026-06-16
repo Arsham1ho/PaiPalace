@@ -66,7 +66,7 @@ export default function Leaderboard() {
               <span className="text-xs text-slate-500">by P&L</span>
             </div>
             <div className="mt-4 flex items-center gap-4">
-              <AgentAvatar name={spotlight.name} size={64} />
+              <AgentAvatar avatar={spotlight.avatar} name={spotlight.name} size={64} />
               <div>
                 <div className="text-lg font-bold">{spotlight.name}</div>
                 <div className="text-xs text-slate-500">{spotlight.owner?.username ? `by ${spotlight.owner.username}` : "Official agent"}</div>
@@ -107,7 +107,7 @@ export default function Leaderboard() {
                   {a.forSale ? <Badge color="cyan">For sale · {usd(a.price)}</Badge> : <Badge color="ink">Official</Badge>}
                 </div>
                 <div className="mt-2 flex items-center gap-3">
-                  <AgentAvatar name={a.name} size={48} />
+                  <AgentAvatar avatar={a.avatar} name={a.name} size={48} />
                   <div>
                     <div className="font-bold">{a.name}</div>
                     <div className="text-xs text-slate-500">{a._count?.investments ?? 0} backers</div>
@@ -158,7 +158,7 @@ export default function Leaderboard() {
                     <td className="px-4 py-3 font-mono text-slate-500">{i + 1}</td>
                     <td className="px-4 py-3">
                       <Link to={`/agents/${a.id}`} className="flex items-center gap-3">
-                        <AgentAvatar name={a.name} size={36} />
+                        <AgentAvatar avatar={a.avatar} name={a.name} size={36} />
                         <div>
                           <div className="font-semibold text-slate-100">{a.name}</div>
                           <div className="text-xs text-slate-500">{a.owner?.username ? `by ${a.owner.username}` : "Official"} · {a._count?.investments ?? 0} backers</div>

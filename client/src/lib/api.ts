@@ -42,6 +42,8 @@ export const api = {
   agent: (id: string) => request<Agent>(`/api/agents/${id}`),
   agentPerformance: (id: string) => request<AgentPerformance>(`/api/agents/${id}/performance`),
   createAgent: (body: any) => request<Agent>("/api/agents", { method: "POST", body: JSON.stringify(body) }),
+  checkAgentName: (name: string) => request<{ available: boolean }>(`/api/agents/check-name?name=${encodeURIComponent(name)}`),
+  improvePrompt: (prompt: string) => request<{ prompt: string; engine: string }>("/api/agents/improve-prompt", { method: "POST", body: JSON.stringify({ prompt }) }),
   buyAgent: (id: string) => request(`/api/agents/${id}/buy`, { method: "POST" }),
   invest: (id: string, amountUsd: number) =>
     request(`/api/agents/${id}/invest`, { method: "POST", body: JSON.stringify({ amountUsd }) }),
@@ -51,6 +53,7 @@ export const api = {
     request<{ ok: boolean; walletAddress: string }>("/api/wallet/link", { method: "POST", body: JSON.stringify({ address }) }),
   deposit: (signature: string) =>
     request<{ ok: boolean; amountUsd: number }>("/api/wallet/deposit", { method: "POST", body: JSON.stringify({ signature }) }),
+  syncDeposits: () => request<{ ok: boolean; credited: number }>("/api/wallet/deposit/sync", { method: "POST" }),
   withdraw: (amountUsd: number) =>
     request<{ ok: boolean; signature: string }>("/api/wallet/withdraw", { method: "POST", body: JSON.stringify({ amountUsd }) }),
   // portfolio
@@ -79,6 +82,7 @@ export const api = {
 export interface WalletInfo {
   balance: number;
   walletAddress: string | null;
+  depositAddress: string | null;
   treasuryAddress: string | null;
   solanaConfigured: boolean;
   withdrawalsEnabled: boolean;

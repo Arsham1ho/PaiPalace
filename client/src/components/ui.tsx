@@ -30,10 +30,11 @@ export function agentAvatarUrl(name: string) {
   return `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${encodeURIComponent(name)}&backgroundColor=1e4fd6,2f6bff,22d3ee&radius=18`;
 }
 
-export function AgentAvatar({ name, size = 40 }: { avatar?: string; name: string; size?: number }) {
+export function AgentAvatar({ avatar, name, size = 40 }: { avatar?: string | null; name: string; size?: number }) {
+  const src = avatar && (avatar.startsWith("http") || avatar.startsWith("data:")) ? avatar : agentAvatarUrl(name);
   return (
     <img
-      src={agentAvatarUrl(name)}
+      src={src}
       alt={name}
       title={name}
       width={size}

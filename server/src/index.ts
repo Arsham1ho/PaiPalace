@@ -10,7 +10,7 @@ import { jsonSafe } from "./db.js";
 
 const app = express();
 app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: env.CLIENT_ORIGIN } });

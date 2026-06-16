@@ -12,6 +12,8 @@ export const env = {
   USDC_MINT: process.env.USDC_MINT ?? "",
   TREASURY_ADDRESS: process.env.TREASURY_ADDRESS ?? "",
   TREASURY_SECRET: process.env.TREASURY_SECRET ?? "",
+  // key used to encrypt per-user deposit-wallet secrets at rest
+  WALLET_ENCRYPTION_KEY: process.env.WALLET_ENCRYPTION_KEY ?? "dev-insecure-wallet-key-change-me",
   // The first user with this email (or the first user overall) becomes admin
   ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
 };
