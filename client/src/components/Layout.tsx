@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { usd, shortAddr } from "../lib/format";
-import { ChevronDown, Settings, UserIcon, LogOut, Chart, Wallet, Trophy, Cpu, Shield } from "./icons";
+import { ChevronDown, Settings, UserIcon, LogOut, Chart, Wallet, Trophy, Cpu, Shield, Bolt } from "./icons";
 import DepositModal from "./DepositModal";
 import WithdrawModal from "./WithdrawModal";
 
@@ -131,7 +131,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             { to: "/portfolio", label: "Portfolio", Icon: Chart },
                             { to: "/wallet", label: "Wallet", Icon: Wallet },
                             { to: `/players/${user.id}`, label: "My profile", Icon: UserIcon },
-                            { to: "/create", label: "Create agent", Icon: Cpu },
+                            { to: "/my-agents", label: "My agents", Icon: Cpu },
+                            { to: "/create", label: "Create agent", Icon: Bolt },
                             ...(user.isAdmin ? [{ to: "/admin", label: "Admin", Icon: Shield }] : []),
                           ].map(({ to, label, Icon }) => (
                             <button key={to} onClick={() => { setProfileOpen(false); nav(to); }}

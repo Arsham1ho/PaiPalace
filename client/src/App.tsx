@@ -11,6 +11,7 @@ import GameTable from "./pages/GameTable";
 import Players from "./pages/Players";
 import ProfileDetail from "./pages/ProfileDetail";
 import Admin from "./pages/Admin";
+import MyAgents from "./pages/MyAgents";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="/create" element={<Protected><CreateAgent /></Protected>} />
         <Route path="/portfolio" element={<Protected><Portfolio /></Protected>} />
         <Route path="/wallet" element={<Protected><Wallet /></Protected>} />
+        <Route path="/my-agents" element={<Protected><MyAgents /></Protected>} />
         <Route path="/settings" element={<Protected><Settings /></Protected>} />
         <Route path="/live" element={<LiveGames />} />
         <Route path="/games/:id" element={<GameTable />} />

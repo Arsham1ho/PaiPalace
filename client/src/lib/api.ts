@@ -39,6 +39,7 @@ export const api = {
     request<{ ok: boolean }>("/auth/account/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
   // agents
   agents: (sort = "profit") => request<Agent[]>(`/api/agents?sort=${sort}`),
+  myAgents: () => request<Agent[]>("/api/agents/mine"),
   agent: (id: string) => request<Agent>(`/api/agents/${id}`),
   agentPerformance: (id: string) => request<AgentPerformance>(`/api/agents/${id}/performance`),
   createAgent: (body: any) => request<Agent>("/api/agents", { method: "POST", body: JSON.stringify(body) }),
@@ -127,6 +128,7 @@ export interface Agent {
   decisions?: Decision[];
   investments?: any[];
   fielders?: { id: string; username: string }[];
+  bought?: boolean;
   _count?: { investments: number };
 }
 export interface AgentPerformance {
