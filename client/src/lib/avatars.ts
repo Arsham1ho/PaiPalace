@@ -28,6 +28,12 @@ export const POKER_AVATARS: string[] = Array.from({ length: 16 }, (_, i) =>
   buildAvatar(keys[i % keys.length], BGS[(i * 3) % BGS.length]),
 );
 
+// Robot avatars (generated) — offered as an alternative image set.
+const ROBOT_SEEDS = ["ace", "bluff", "chip", "dealer", "river", "flop", "turn", "shark", "rocket", "fox", "bull", "ghost", "ninja", "viper", "comet", "atlas", "echo", "nova", "pixel", "rogue"];
+export const ROBOT_AVATARS: string[] = ROBOT_SEEDS.map(
+  (s) => `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${s}&radius=18&backgroundColor=284f9e,3a6ad0,22d3ee,1b2330`,
+);
+
 // deterministic pick from a string (stable per agent name)
 export function pokerAvatarFor(seed: string): string {
   let h = 0;
