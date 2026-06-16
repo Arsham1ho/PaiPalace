@@ -8,11 +8,11 @@ import DepositModal from "../components/DepositModal";
 
 const TX_TONE: Record<string, "green" | "red" | "ink" | "pink" | "cyan"> = {
   deposit: "green", winnings: "green", withdraw: "red", loss: "red",
-  invest: "pink", divest: "cyan", buy_agent: "ink", admin_adjust: "cyan",
+  invest: "pink", divest: "cyan", buy_agent: "ink", admin_adjust: "cyan", test_fee: "red",
 };
 const EXPLORER = (sig: string) => `https://solscan.io/tx/${sig}`;
 const isPlus = (t: string) => ["deposit", "winnings"].includes(t);
-const isMinus = (t: string) => ["withdraw", "loss", "invest", "buy_agent"].includes(t);
+const isMinus = (t: string) => ["withdraw", "loss", "invest", "buy_agent", "test_fee"].includes(t);
 
 export default function Wallet() {
   const { refresh } = useAuth();

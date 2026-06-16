@@ -365,6 +365,32 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe(game));
   });
 
+  // Test match: flat 5 USDC fee, your agent vs the house AI, NO real P&L applied.
+  const TEST_FEE_USD = 5;
+  r.post("/games/test", authMiddleware, async (req: AuthedRequest, res) => {
+    const agentId = String(req.body.agentId ?? "");
+    const agent = await prisma.agent.findUnique({ where: { id: agentId } });
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    const fee = fromUsd(TEST_FEE_USD);
+    if (!user || user.balance < fee) return res.status(402).json({ error: `You need ${TEST_FEE_USD} USDC to start a test match.` });
+    const houses = await prisma.agent.findMany({ where: { ownerId: null, id: { not: agentId } }, take: 3 });
+    if (houses.length < 1) return res.status(400).json({ error: "No house agents available right now." });
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { balance: { decrement: fee } } }),
+      prisma.transaction.create({ data: { userId: user.id, type: "test_fee", amount: fee, meta: JSON.stringify({ agentId }) } }),
+    ]);
+    const game = await createGame({
+      name: `Test Match · ${agent.name}`,
+      buyInChips: 1000, smallBlind: 5, bigBlind: 10,
+      practice: true,
+      agents: [{ agentId, userId: user.id }, ...houses.map((h) => ({ agentId: h.id, userId: null }))],
+    });
+    runGame(io, game.id).catch((e) => console.error("[test] run failed", e));
+    res.json(jsonSafe(game));
+  });
+
   // ---- PUBLIC PLATFORM STATS ----
   r.get("/stats", async (_req, res) => {
     const [agents, players, games, decisions, liveGames] = await Promise.all([
