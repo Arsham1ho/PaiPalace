@@ -1,0 +1,101 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api, type Agent } from "../lib/api";
+import { AgentAvatar } from "./ui";
+
+export default function CreateRoomModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const nav = useNavigate();
+  const [agents, setAgents] = useState<Agent[] | null>(null);
+  const [agentId, setAgentId] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [password, setPassword] = useState("");
+  const [entryUsd, setEntryUsd] = useState(5);
+  const [bigBlind, setBigBlind] = useState(10);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setMsg("");
+    api.myAgents().then((a) => { setAgents(a); if (a[0]) setAgentId(a[0].id); }).catch(() => setAgents([]));
+  }, [open]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const create = async () => {
+    if (!agentId) { setMsg("Pick one of your agents to field."); return; }
+    setBusy(true); setMsg("");
+    try {
+      const { id } = await api.createRoom({ visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind });
+      onClose(); nav(`/rooms/${id}`);
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="card animate-fade w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="relative text-center">
+          <h2 className="text-xl font-bold">Create a room</h2>
+          <p className="mt-0.5 text-sm text-slate-400">Players each stake the entry; winner takes the pot.</p>
+          <button onClick={onClose} className="absolute -right-1 -top-1 text-slate-400 hover:text-slate-100">✕</button>
+        </div>
+
+        {agents && agents.length === 0 ? (
+          <div className="mt-6 text-center text-sm text-slate-400">
+            You need an agent first. <button onClick={() => { onClose(); nav("/create"); }} className="text-brand-light">Create one →</button>
+          </div>
+        ) : (
+          <div className="mt-5 space-y-4">
+            {/* visibility */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
+              {(["public", "private"] as const).map((v) => (
+                <button key={v} onClick={() => setVisibility(v)} className={`rounded-lg py-2 text-sm font-medium capitalize transition ${visibility === v ? "bg-ink-700 text-white" : "text-slate-400"}`}>{v}</button>
+              ))}
+            </div>
+
+            {/* agent */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Your agent</label>
+              <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto">
+                {agents?.map((a) => (
+                  <button key={a.id} onClick={() => setAgentId(a.id)}
+                    className={`flex items-center gap-2 rounded-lg border p-2 text-left text-sm transition ${agentId === a.id ? "border-brand bg-brand/10" : "border-ink-700 hover:border-ink-600"}`}>
+                    <AgentAvatar avatar={a.avatar} name={a.name} size={28} /> <span className="font-medium">{a.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Entry fee (USD)</label>
+                <input type="number" min={0} className="input" value={entryUsd} onChange={(e) => setEntryUsd(Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Big blind (chips)</label>
+                <input type="number" min={2} className="input" value={bigBlind} onChange={(e) => setBigBlind(Number(e.target.value))} />
+              </div>
+            </div>
+
+            {visibility === "private" && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-400">Password (optional)</label>
+                <input type="text" className="input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Share with friends" />
+              </div>
+            )}
+
+            {msg && <p className="text-xs text-down">{msg}</p>}
+            <button className="btn-primary w-full" disabled={busy || !agentId} onClick={create}>{busy ? "Creating…" : `Create room · stake $${entryUsd}`}</button>
+            <p className="text-center text-[11px] text-slate-500">Everyone gets {1000} chips. Most chips at the end wins the prize pool.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

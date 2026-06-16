@@ -66,6 +66,13 @@ export const api = {
   game: (id: string) => request<GameDetail>(`/api/games/${id}`),
   createGame: (body: any) => request<Game>("/api/games", { method: "POST", body: JSON.stringify(body) }),
   testMatch: (agentId: string) => request<Game>("/api/games/test", { method: "POST", body: JSON.stringify({ agentId }) }),
+  // rooms (multiplayer)
+  rooms: () => request<RoomSummary[]>("/api/rooms"),
+  room: (id: string) => request<RoomDetail>(`/api/rooms/${id}`),
+  roomByCode: (code: string) => request<{ id: string }>(`/api/rooms/code/${code}`),
+  createRoom: (body: any) => request<{ id: string; roomCode: string }>("/api/rooms", { method: "POST", body: JSON.stringify(body) }),
+  joinRoom: (id: string, body: any) => request(`/api/rooms/${id}/join`, { method: "POST", body: JSON.stringify(body) }),
+  startRoom: (id: string) => request(`/api/rooms/${id}/start`, { method: "POST" }),
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),
@@ -182,6 +189,18 @@ export interface Portfolio {
   investments: { id: string; amount: number; agent: Agent }[];
   ownedAgents: Agent[];
   series: { t: string; value: number; type: string }[];
+}
+export interface RoomSummary {
+  id: string; name: string; players: number; maxPlayers: number;
+  entryMicro: number; prizePool: number; smallBlind: number; bigBlind: number;
+  visibility: string; status: string; createdAt: string;
+  seats: { seatIndex: number; agent: { name: string; avatar?: string } }[];
+}
+export interface RoomDetail {
+  id: string; name: string; status: string; visibility: string; roomCode: string | null;
+  entryMicro: number; prizePool: number; smallBlind: number; bigBlind: number;
+  hostId: string | null; isHost: boolean; needsPassword: boolean; joined: boolean; maxPlayers: number;
+  players: { seatIndex: number; userId: string | null; username?: string; agent: { name: string; avatar?: string } }[];
 }
 export interface PlatformStats {
   agents: number; players: number; games: number; decisions: number; liveGames: number; hands: number;

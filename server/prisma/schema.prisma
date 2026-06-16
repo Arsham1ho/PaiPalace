@@ -92,6 +92,14 @@ model Game {
   potTotal    BigInt   @default(0)
   handNumber  Int      @default(0)
   practice    Boolean  @default(false) // test match: flat fee, no real P&L applied
+  // ── multiplayer rooms ──
+  isRoom      Boolean  @default(false)
+  visibility  String   @default("public") // public | private
+  roomCode    String?  @unique
+  passwordHash String?
+  hostId      String?
+  entryMicro  BigInt   @default(0) // USDC entry fee per player (micro)
+  prizePool   BigInt   @default(0) // total staked; winner takes it
   winnerAgent String?
   createdAt   DateTime @default(now())
   finishedAt  DateTime?

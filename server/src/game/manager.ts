@@ -206,7 +206,7 @@ export async function runGame(io: Server, gameId: string, opts?: { delayMs?: num
     await sleep(delay * 3.5); // let spectators see the showdown result
   }
 
-  await finishGame(io, gameId, stacks, metaBySeat, buyIn, game.practice);
+  await finishGame(io, gameId, stacks, metaBySeat, buyIn, game.practice, game.isRoom, game.prizePool);
 }
 
 function dealerIndexIn(seeds: SeatSeed[], dealerSeatIndex: number): number {
@@ -221,6 +221,8 @@ async function finishGame(
   metaBySeat: Map<number, AgentMeta>,
   buyIn: number,
   practice = false,
+  isRoom = false,
+  prizePool: bigint = 0n,
 ) {
   // settle economics: each agent's net chip P&L converts to money and is
   // credited to the fielding user + shared across that agent's investors.
@@ -248,6 +250,9 @@ async function finishGame(
       where: { id: meta.id },
       data: { netProfit: { increment: netMicro } },
     });
+
+    // rooms pay out the prize pool to the winner (handled after the loop), not per-agent P&L
+    if (isRoom) continue;
 
     // credit fielding user
     if (meta.userId) {
@@ -290,12 +295,23 @@ async function finishGame(
   // Real multiplayer ELO update from the finishing order (pairwise, K=24).
   if (!practice) await updateElo(summary);
 
+  // Room: winner takes the whole prize pool.
+  let prizeWinnerUserId: string | null = null;
+  if (isRoom && prizePool > 0n && winnerAgent) {
+    const champ = [...metaBySeat.values()].find((m) => m.id === winnerAgent);
+    if (champ?.userId) {
+      prizeWinnerUserId = champ.userId;
+      await prisma.user.update({ where: { id: champ.userId }, data: { balance: { increment: prizePool } } });
+      await prisma.transaction.create({ data: { userId: champ.userId, type: "winnings", amount: prizePool, meta: JSON.stringify({ gameId, room: true }) } });
+    }
+  }
+
   await prisma.game.update({
     where: { id: gameId },
     data: { status: "finished", winnerAgent, finishedAt: new Date() },
   });
   liveGames.delete(gameId);
-  io.to(room(gameId)).emit("game:finished", jsonSafe({ gameId, winnerAgent, summary }));
+  io.to(room(gameId)).emit("game:finished", jsonSafe({ gameId, winnerAgent, summary, prizePool: isRoom ? Number(prizePool) : 0, prizeWinnerUserId }));
 }
 
 // Standard pairwise multiplayer ELO from finishing chip counts.
