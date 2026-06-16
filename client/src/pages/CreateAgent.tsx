@@ -167,7 +167,7 @@ export default function CreateAgent() {
               <div className="mt-3 space-y-3">
                 <div>
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Poker & casino</div>
-                  <div className="grid grid-cols-5 gap-3 sm:grid-cols-6">
+                  <div className="grid grid-cols-8 gap-2 sm:grid-cols-10">
                     {POKER_AVATARS.map((url) => (
                       <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
                         className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
@@ -178,7 +178,7 @@ export default function CreateAgent() {
                 </div>
                 <div>
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Robots</div>
-                  <div className="grid grid-cols-5 gap-3 sm:grid-cols-6">
+                  <div className="grid grid-cols-8 gap-2 sm:grid-cols-10">
                     {ROBOT_AVATARS.map((url) => (
                       <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
                         className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
