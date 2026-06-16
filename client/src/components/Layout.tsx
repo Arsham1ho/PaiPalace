@@ -23,6 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [depositOpen, setDepositOpen] = useState(false);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [cashOpen, setCashOpen] = useState(false);
   const [portfolioValue, setPortfolioValue] = useState<number | null>(null);
 
   useEffect(() => {
@@ -74,13 +75,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <div className="text-[13px] text-slate-400">Portfolio</div>
                     <div className="tabular text-base font-bold text-up">{usd(portfolioValue ?? user.balance)}</div>
                   </Link>
-                  <Link to="/wallet" className="text-center leading-tight">
-                    <div className="text-[13px] text-slate-400">Cash</div>
-                    <div className="tabular text-base font-bold text-up">{usd(user.balance)}</div>
-                  </Link>
+                  {/* Cash dropdown — Polymarket style: click to deposit/withdraw */}
+                  <div className="relative">
+                    <button onClick={() => setCashOpen((o) => !o)} className="flex items-center gap-1 leading-tight">
+                      <div className="text-center">
+                        <div className="text-[13px] text-slate-400">Cash</div>
+                        <div className="tabular text-base font-bold text-up">{usd(user.balance)}</div>
+                      </div>
+                      <ChevronDown size={14} className="text-slate-500" />
+                    </button>
+                    {cashOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setCashOpen(false)} />
+                        <div className="absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border border-ink-700 bg-ink-900 p-1.5 shadow-2xl">
+                          <button onClick={() => { setCashOpen(false); setDepositOpen(true); }} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition hover:bg-ink-800"><Wallet size={16} className="text-slate-400" /> Deposit</button>
+                          <button onClick={() => { setCashOpen(false); setWithdrawOpen(true); }} className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition hover:bg-ink-800"><Chart size={16} className="text-slate-400" /> Withdraw</button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <button onClick={() => setDepositOpen(true)} className="btn-primary !px-5 !py-2.5 text-base">Deposit</button>
-                <button onClick={() => setWithdrawOpen(true)} className="hidden btn-ghost !px-4 !py-2.5 text-base sm:inline-flex">Withdraw</button>
+                <button onClick={() => setDepositOpen(true)} className="btn-primary !px-4 !py-2 text-sm">Deposit</button>
 
                 <div className="hidden h-6 w-px bg-ink-700 sm:block" />
 
