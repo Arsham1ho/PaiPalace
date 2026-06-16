@@ -33,6 +33,10 @@ export const api = {
   login: (body: { email: string; password: string }) =>
     request<{ token: string; user: User }>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
   me: () => request<{ user: User }>("/auth/me"),
+  updateUsername: (username: string) =>
+    request<{ user: User }>("/auth/account", { method: "PATCH", body: JSON.stringify({ username }) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ ok: boolean }>("/auth/account/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }),
   // agents
   agents: (sort = "profit") => request<Agent[]>(`/api/agents?sort=${sort}`),
   agent: (id: string) => request<Agent>(`/api/agents/${id}`),
@@ -57,6 +61,7 @@ export const api = {
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),
+  leaderboard: (period = "all") => request<AccountRow[]>(`/api/leaderboard?period=${period}`),
   // admin
   adminStats: () => request<AdminStats>("/api/admin/stats"),
   adminUsers: () => request<AdminUser[]>("/api/admin/users"),
@@ -160,6 +165,16 @@ export interface Portfolio {
   investments: { id: string; amount: number; agent: Agent }[];
   ownedAgents: Agent[];
   series: { t: string; value: number; type: string }[];
+}
+export interface AccountRow {
+  id: string;
+  username: string;
+  walletAddress: string | null;
+  createdAt: string;
+  agents: number;
+  investments: number;
+  profit: number;
+  volume: number;
 }
 export interface PublicUser {
   id: string;

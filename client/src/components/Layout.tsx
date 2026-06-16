@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import { usd, shortAddr } from "../lib/format";
-import { ChevronDown } from "./icons";
+import { ChevronDown, Settings, UserIcon, LogOut, Chart, Wallet, Trophy, Cpu, Shield } from "./icons";
+import DepositModal from "./DepositModal";
 
 const userAvatar = (seed: string) => `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(seed)}`;
 
@@ -19,6 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
   const [portfolioValue, setPortfolioValue] = useState<number | null>(null);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <div className="text-sm font-bold text-up">{usd(user.balance)}</div>
                   </Link>
                 </div>
-                <Link to="/wallet" className="btn-primary !px-4 !py-2 text-sm">Deposit</Link>
+                <button onClick={() => setDepositOpen(true)} className="btn-primary !px-4 !py-2 text-sm">Deposit</button>
 
                 <div className="hidden h-6 w-px bg-ink-700 sm:block" />
 
@@ -91,36 +93,42 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   {profileOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-                      <div className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-xl border border-ink-700 bg-ink-900 p-1 shadow-xl">
-                        <div className="flex items-center gap-3 px-3 py-3">
+                      <div className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-ink-700 bg-ink-900 p-1.5 shadow-2xl">
+                        {/* header: avatar + address + settings gear */}
+                        <div className="flex items-center gap-3 border-b border-ink-700 px-2.5 pb-3 pt-2">
                           <img src={userAvatar(user.username)} alt="" className="h-10 w-10 rounded-full border border-ink-700 bg-ink-800" />
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-semibold text-slate-100">{user.username}</div>
-                            <div className="truncate text-[11px] text-slate-500">{user.email}</div>
+                            <div className="truncate font-mono text-[11px] text-slate-500">{user.walletAddress ? shortAddr(user.walletAddress) : user.email}</div>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between px-3 pb-2">
-                          <span className="text-[11px] text-slate-500">Balance</span>
-                          <span className="text-sm font-semibold text-up">{usd(user.balance)}</span>
-                        </div>
-                        {user.walletAddress && (
-                          <div className="flex items-center justify-between px-3 pb-2">
-                            <span className="text-[11px] text-slate-500">Wallet</span>
-                            <span className="font-mono text-[11px] text-slate-400">{shortAddr(user.walletAddress)}</span>
-                          </div>
-                        )}
-                        <div className="my-1 h-px bg-ink-700" />
-                        {[["/portfolio", "Portfolio"], ["/wallet", "Wallet"], ...(user.isAdmin ? [["/admin", "Admin"]] : [])].map(([to, label]) => (
-                          <button key={to} onClick={() => { setProfileOpen(false); nav(to); }}
-                            className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-300 hover:bg-ink-800">
-                            {label}
+                          <button onClick={() => { setProfileOpen(false); nav("/settings"); }} title="Settings" className="text-slate-400 transition hover:text-slate-100">
+                            <Settings size={18} />
                           </button>
-                        ))}
-                        <div className="my-1 h-px bg-ink-700" />
-                        <button onClick={() => { setProfileOpen(false); logout(); nav("/"); }}
-                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-down hover:bg-ink-800">
-                          Sign out
-                        </button>
+                        </div>
+
+                        {/* primary links with icons */}
+                        <div className="py-1.5">
+                          {[
+                            { to: "/", label: "Leaderboard", Icon: Trophy },
+                            { to: "/portfolio", label: "Portfolio", Icon: Chart },
+                            { to: "/wallet", label: "Wallet", Icon: Wallet },
+                            { to: `/players/${user.id}`, label: "My profile", Icon: UserIcon },
+                            { to: "/create", label: "Create agent", Icon: Cpu },
+                            ...(user.isAdmin ? [{ to: "/admin", label: "Admin", Icon: Shield }] : []),
+                          ].map(({ to, label, Icon }) => (
+                            <button key={to} onClick={() => { setProfileOpen(false); nav(to); }}
+                              className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-slate-300 transition hover:bg-ink-800">
+                              <Icon size={18} className="text-slate-400" /> {label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="border-t border-ink-700 pt-1.5">
+                          <button onClick={() => { setProfileOpen(false); logout(); nav("/"); }}
+                            className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-down transition hover:bg-ink-800">
+                            <LogOut size={18} /> Logout
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -166,6 +174,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </p>
         </div>
       </footer>
+
+      {user && <DepositModal open={depositOpen} onClose={() => setDepositOpen(false)} />}
     </div>
   );
 }

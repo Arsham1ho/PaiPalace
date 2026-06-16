@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api, type Agent } from "../lib/api";
 import { AgentAvatar, Badge, ProfitText, Spinner, WinRate } from "../components/ui";
 import LiveGamesStrip from "../components/LiveGamesStrip";
+import TopPlayers from "../components/TopPlayers";
 import { usd, pct } from "../lib/format";
 
 const SORTS = [
@@ -133,6 +134,9 @@ export default function Leaderboard() {
           </div>
         )}
       </section>
+
+      {/* Top accounts */}
+      <TopPlayers />
     </div>
   );
 }

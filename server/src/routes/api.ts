@@ -268,6 +268,39 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe(game));
   });
 
+  // ---- ACCOUNT LEADERBOARD ----
+  r.get("/leaderboard", async (req, res) => {
+    const period = (req.query.period as string) ?? "all";
+    const now = Date.now();
+    const since =
+      period === "day" ? new Date(now - 864e5) :
+      period === "week" ? new Date(now - 7 * 864e5) :
+      period === "month" ? new Date(now - 30 * 864e5) : null;
+
+    const txs = await prisma.transaction.findMany({
+      where: since ? { createdAt: { gte: since } } : {},
+      select: { userId: true, type: true, amount: true },
+    });
+    const agg = new Map<string, { profit: bigint; volume: bigint }>();
+    for (const t of txs) {
+      const m = agg.get(t.userId) ?? { profit: 0n, volume: 0n };
+      if (t.type === "winnings") { m.profit += t.amount; m.volume += t.amount; }
+      else if (t.type === "loss") { m.profit -= t.amount; m.volume += t.amount; }
+      else if (t.type === "invest" || t.type === "buy_agent") { m.volume += t.amount; }
+      agg.set(t.userId, m);
+    }
+    const users = await prisma.user.findMany({ include: { _count: { select: { agents: true, investments: true } } } });
+    const rows = users.map((u) => {
+      const m = agg.get(u.id) ?? { profit: 0n, volume: 0n };
+      return {
+        id: u.id, username: u.username, walletAddress: u.walletAddress, createdAt: u.createdAt,
+        agents: u._count.agents, investments: u._count.investments,
+        profit: m.profit, volume: m.volume,
+      };
+    }).sort((a, b) => (b.profit > a.profit ? 1 : b.profit < a.profit ? -1 : Number(b.volume - a.volume)));
+    res.json(jsonSafe(rows.slice(0, 100)));
+  });
+
   // ---- PUBLIC USERS / TRANSPARENCY ----
   r.get("/users", async (_req, res) => {
     const users = await prisma.user.findMany({
