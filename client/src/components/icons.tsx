@@ -56,3 +56,9 @@ export const Chart = ({ className, size }: P) => (
 export const Copy = ({ className, size }: P) => (
   <svg {...base(size)} className={className}><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
 );
+export const Volume = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /></svg>
+);
+export const VolumeOff = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}><path d="M11 5 6 9H3v6h3l5 4z" /><path d="m22 9-6 6M16 9l6 6" /></svg>
+);

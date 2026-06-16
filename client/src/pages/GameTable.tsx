@@ -3,6 +3,25 @@ import { useParams, Link } from "react-router-dom";
 import { api, type GameDetail } from "../lib/api";
 import { getSocket } from "../lib/socket";
 import { AgentAvatar, Badge, Card, PlayingCard, Spinner } from "../components/ui";
+import { Volume, VolumeOff } from "../components/icons";
+import { play, isMuted, setMuted } from "../lib/sound";
+
+function Confetti() {
+  const colors = ["#3a6ad0", "#22d3ee", "#26d07c", "#e0c64a", "#ffffff"];
+  const pieces = Array.from({ length: 60 }, (_, i) => ({
+    left: (i * 1.7 + (i % 5) * 3) % 100,
+    delay: (i % 10) * 0.08,
+    dur: 1.6 + (i % 5) * 0.25,
+    color: colors[i % colors.length],
+  }));
+  return (
+    <div className="pointer-events-none absolute inset-0 z-30 overflow-hidden">
+      {pieces.map((p, i) => (
+        <span key={i} className="confetti-piece" style={{ left: `${p.left}%`, background: p.color, animationDelay: `${p.delay}s`, animationDuration: `${p.dur}s` }} />
+      ))}
+    </div>
+  );
+}
 
 interface LastAction { type: string; amount: number }
 interface SeatView {
@@ -55,6 +74,10 @@ export default function GameTable() {
   const [status, setStatus] = useState<string>("");
   const [winners, setWinners] = useState<Winner[]>([]);
   const [summary, setSummary] = useState<any[] | null>(null);
+  const [muted, setMutedState] = useState(isMuted());
+  const [callout, setCallout] = useState<{ text: string; tone: string; key: number } | null>(null);
+  const [allinFlash, setAllinFlash] = useState(0);
+  const [displayPot, setDisplayPot] = useState(0);
 
   useEffect(() => {
     api.game(id!).then((g) => {
@@ -74,13 +97,16 @@ export default function GameTable() {
     const socket = getSocket();
     socket.emit("game:watch", id);
     const onSnapshot = (p: any) => setTable(p.state);
-    const onHandStart = (p: any) => { setTable(p.state); setWinners([]); setSummary(null); setStatus("running"); };
-    const onStreet = (p: any) => setTable(p.state);
+    const onHandStart = (p: any) => { setTable(p.state); setWinners([]); setSummary(null); setStatus("running"); play("deal"); };
+    const onStreet = (p: any) => { setTable(p.state); play("deal"); };
     const onAction = (p: any) => {
       setTable(p.state);
       setFeed((f) => [{ agentName: p.agentName, action: p.action, amount: p.amount, reasoning: p.reasoning, engine: p.engine }, ...f].slice(0, 60));
+      play(p.action as any);
+      setCallout({ text: `${p.action}${p.amount ? " " + p.amount : ""}`, tone: p.action, key: Date.now() });
+      if (p.action === "allin") setAllinFlash(Date.now());
     };
-    const onShowdown = (p: any) => { setTable(p.state); setWinners(p.result?.winners ?? []); };
+    const onShowdown = (p: any) => { setTable(p.state); setWinners(p.result?.winners ?? []); play("win"); };
     const onFinished = (p: any) => { setStatus("finished"); setSummary(p.summary); };
     socket.on("game:snapshot", onSnapshot);
     socket.on("game:hand_start", onHandStart);
@@ -93,6 +119,21 @@ export default function GameTable() {
       ["game:snapshot","game:hand_start","game:street","game:action","game:showdown","game:finished"].forEach((e) => socket.off(e));
     };
   }, [id]);
+
+  // pot count-up animation
+  useEffect(() => {
+    const target = table?.pot ?? 0;
+    const start = displayPot;
+    if (start === target) return;
+    const t0 = performance.now(), diff = target - start, dur = 400;
+    let raf = requestAnimationFrame(function step(now) {
+      const k = Math.min(1, (now - t0) / dur);
+      setDisplayPot(Math.round(start + diff * k));
+      if (k < 1) raf = requestAnimationFrame(step);
+    });
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table?.pot]);
 
   if (!game) return <Spinner />;
 
@@ -111,8 +152,14 @@ export default function GameTable() {
             <Link to="/live" className="text-xs text-slate-500 hover:text-slate-300">← Games</Link>
             <h1 className="flex items-center gap-2 text-xl font-extrabold">{game.name} {game.practice && <Badge color="cyan">Practice · no real P&L</Badge>}</h1>
           </div>
-          {status === "running" ? <Badge color="pink">● LIVE · hand {table?.handNumber ?? game.handNumber}</Badge>
-            : status === "finished" ? <Badge color="green">Finished</Badge> : <Badge color="ink">Waiting…</Badge>}
+          <div className="flex items-center gap-3">
+            <button onClick={() => { const m = !muted; setMuted(m); setMutedState(m); if (!m) play("click"); }}
+              title={muted ? "Unmute" : "Mute"} className="text-slate-400 transition hover:text-slate-100">
+              {muted ? <VolumeOff size={18} /> : <Volume size={18} />}
+            </button>
+            {status === "running" ? <Badge color="pink">● LIVE · hand {table?.handNumber ?? game.handNumber}</Badge>
+              : status === "finished" ? <Badge color="green">Finished</Badge> : <Badge color="ink">Waiting…</Badge>}
+          </div>
         </div>
 
         {/* street progress */}
@@ -151,7 +198,7 @@ export default function GameTable() {
             </div>
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-ink-950/70 px-4 py-1.5 shadow-lg">
               <span className="inline-block h-3 w-3 rounded-full bg-brand ring-2 ring-brand-light/40" />
-              <span className="text-sm font-bold text-white">{table?.pot ?? 0}</span>
+              <span className="tabular text-sm font-bold text-white">{displayPot}</span>
               <span className="text-[11px] uppercase tracking-wide text-slate-400">pot</span>
             </div>
           </div>
@@ -200,6 +247,13 @@ export default function GameTable() {
                     <div className="mt-1 text-[11px] text-brand-light">thinking…</div>
                   ) : null}
 
+                  {/* on-the-clock timer bar */}
+                  {active && (
+                    <div className="absolute -bottom-1 left-2 right-2 h-1 overflow-hidden rounded-full bg-ink-700">
+                      <div className="h-full w-full rounded-full bg-brand animate-clock" />
+                    </div>
+                  )}
+
                   {/* committed chips toward the pot */}
                   {s.committed > 0 && !win && (
                     <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-950/90 px-2 py-0.5 text-[11px] font-semibold text-pai-cyan">
@@ -210,6 +264,19 @@ export default function GameTable() {
               </div>
             );
           })}
+
+          {/* big action callout */}
+          {callout && (
+            <div key={callout.key} className={`animate-pop pointer-events-none absolute left-1/2 top-[38%] z-30 -translate-x-1/2 -translate-y-1/2 rounded-xl px-4 py-1.5 text-lg font-extrabold uppercase tracking-wide shadow-xl ${ACTION_STYLE[callout.tone] ?? "bg-ink-800 text-white"}`}>
+              {callout.text}
+            </div>
+          )}
+
+          {/* all-in screen flash */}
+          {allinFlash > 0 && <div key={allinFlash} className="animate-allin pointer-events-none absolute inset-[10%] z-20 rounded-[50%] bg-amber-400/40" />}
+
+          {/* winner confetti */}
+          {winners.length > 0 && <Confetti />}
         </div>
 
         {summary && (
