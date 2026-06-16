@@ -90,3 +90,32 @@ table,
   to { opacity: 1; transform: none; }
 }
 .animate-fade { animation: fade-up 0.3s ease-out both; }
+
+/* "on the clock" timer bar under the active seat */
+@keyframes clock {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.animate-clock { transform-origin: left; animation: clock 1.1s linear infinite; }
+
+/* big action callout pop */
+@keyframes pop-in {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  60% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+.animate-pop { animation: pop-in 1s ease-out forwards; }
+
+/* all-in screen flash */
+@keyframes allin-flash {
+  0%, 100% { opacity: 0; }
+  30% { opacity: 0.5; }
+}
+.animate-allin { animation: allin-flash 0.8s ease-out forwards; }
+
+/* confetti */
+@keyframes confetti-fall {
+  0% { opacity: 1; transform: translateY(-10%) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(900%) rotate(720deg); }
+}
+.confetti-piece { position: absolute; top: 0; width: 8px; height: 12px; border-radius: 2px; animation: confetti-fall linear forwards; }
