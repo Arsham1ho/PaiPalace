@@ -34,6 +34,18 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe(mapped));
   });
 
+  // agents owned by the current user (created + bought)
+  r.get("/agents/mine", authMiddleware, async (req: AuthedRequest, res) => {
+    const agents = await prisma.agent.findMany({
+      where: { ownerId: req.userId },
+      include: { _count: { select: { investments: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    const buys = await prisma.transaction.findMany({ where: { userId: req.userId, type: "buy_agent" } });
+    const bought = new Set(buys.map((t) => { try { return JSON.parse(t.meta).agentId; } catch { return null; } }).filter(Boolean));
+    res.json(jsonSafe(agents.map((a) => ({ ...withWinRate(a), bought: bought.has(a.id) }))));
+  });
+
   // check agent-name availability (case-insensitive)
   r.get("/agents/check-name", async (req, res) => {
     const name = String(req.query.name ?? "").trim();
