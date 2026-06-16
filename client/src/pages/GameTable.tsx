@@ -176,17 +176,19 @@ export default function GameTable() {
         <div className="relative mx-auto aspect-[16/10] w-full select-none">
           {/* soft ground shadow under the table */}
           <div className="absolute inset-[4%] rounded-[50%] bg-black/70 blur-2xl" />
-          {/* padded leather rail (cushioned: light top edge, dark bottom) */}
-          <div className="absolute inset-[3%] rounded-[50%] bg-[#17191f] shadow-[inset_0_5px_10px_rgba(255,255,255,0.07),inset_0_-14px_26px_rgba(0,0,0,0.75),0_34px_70px_-18px_rgba(0,0,0,0.95)]" />
-          <div className="absolute inset-[3%] rounded-[50%] border border-white/[0.05]" />
-          {/* brass trim ring */}
-          <div className="absolute inset-[9.5%] rounded-[50%] border-2 border-[#b8924a]/55 shadow-[0_0_12px_rgba(184,146,74,0.25)]" />
-          <div className="absolute inset-[9.5%] rounded-[50%] border-t border-[#e7cf94]/30" />
-          {/* recessed felt with vignette */}
-          <div className="absolute inset-[10.5%] rounded-[50%] bg-[#15457e] shadow-[inset_0_0_120px_rgba(0,0,0,0.72),inset_0_6px_18px_rgba(0,0,0,0.5)]" />
-          <div className="absolute inset-[10.5%] rounded-[50%] border border-white/[0.04]" />
+          {/* wooden rail — warm walnut with cushioned top sheen & dark underside */}
+          <div className="absolute inset-[3%] rounded-[50%]" style={{ background: "#241913", boxShadow: "inset 0 7px 14px rgba(196,156,96,0.20), inset 0 -18px 30px rgba(0,0,0,0.82), 0 38px 72px -18px rgba(0,0,0,0.95)" }} />
+          <div className="absolute inset-[3%] rounded-[50%] border border-[#c8a25a]/15" />
+          {/* double brass trim */}
+          <div className="absolute inset-[9%] rounded-[50%] border-2 border-[#c79a4e]/60 shadow-[0_0_14px_rgba(199,154,78,0.30)]" />
+          <div className="absolute inset-[9.9%] rounded-[50%] border border-[#e7cf94]/25" />
+          {/* casino-green felt with deep vignette */}
+          <div className="absolute inset-[10.5%] rounded-[50%]" style={{ background: "#0c5a38", boxShadow: "inset 0 0 150px rgba(0,0,0,0.80), inset 0 9px 24px rgba(0,0,0,0.5)" }} />
+          {/* overhead spotlight on the felt */}
+          <div className="pointer-events-none absolute inset-[10.5%] rounded-[50%]" style={{ background: "radial-gradient(58% 54% at 50% 42%, rgba(255,255,255,0.11), rgba(255,255,255,0) 70%)" }} />
           {/* dealer betting line */}
-          <div className="absolute inset-[20%] rounded-[50%] border border-white/[0.09]" />
+          <div className="absolute inset-[20%] rounded-[50%] border border-white/[0.10]" />
+          <div className="absolute inset-[20%] rounded-[50%] border-t border-[#0f7a4c]/40" />
           {/* center felt logo watermark */}
           <img src="/images/pai-logo.png" alt="" className="pointer-events-none absolute left-1/2 top-1/2 w-28 -translate-x-1/2 -translate-y-1/2 opacity-[0.05]" />
 
