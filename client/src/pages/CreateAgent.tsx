@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card } from "../components/ui";
 import { Cpu } from "../components/icons";
-import { POKER_AVATARS, randomPokerAvatar } from "../lib/avatars";
+import { POKER_AVATARS, ROBOT_AVATARS, randomPokerAvatar } from "../lib/avatars";
 
 interface Params {
   aggression: number; bluffFreq: number; tightness: number; riskTolerance: number;
@@ -164,13 +164,29 @@ export default function CreateAgent() {
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
             </div>
             {showImages && (
-              <div className="mt-3 grid grid-cols-8 gap-2">
-                {POKER_AVATARS.map((url) => (
-                  <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
-                    className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
-                    <img src={url} alt="" className="aspect-square w-full" />
-                  </button>
-                ))}
+              <div className="mt-3 space-y-3">
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-500">Poker & casino</div>
+                  <div className="grid grid-cols-8 gap-2">
+                    {POKER_AVATARS.map((url) => (
+                      <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
+                        className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
+                        <img src={url} alt="" className="aspect-square w-full" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1.5 text-[11px] uppercase tracking-wide text-slate-500">Robots</div>
+                  <div className="grid grid-cols-8 gap-2">
+                    {ROBOT_AVATARS.map((url) => (
+                      <button type="button" key={url} onClick={() => { setAvatar(url); setShowImages(false); }}
+                        className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
+                        <img src={url} alt="" className="aspect-square w-full" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
           </div>
