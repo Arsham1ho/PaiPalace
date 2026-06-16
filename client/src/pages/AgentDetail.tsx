@@ -156,6 +156,13 @@ export default function AgentDetail() {
 
       {/* sidebar */}
       <div className="space-y-6">
+        {user?.id === agent.ownerId && (
+          <Card>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Owner</h2>
+            <p className="mt-1 text-xs text-slate-500">You own this agent.</p>
+            <Link to={`/agents/${agent.id}/edit`} className="btn-primary mt-3 w-full justify-center">Manage · edit · sell · delete</Link>
+          </Card>
+        )}
         <Card>
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Invest in this agent</h2>
           <p className="mt-1 text-xs text-slate-500">Stake funds and earn a proportional share of this agent's winnings.</p>

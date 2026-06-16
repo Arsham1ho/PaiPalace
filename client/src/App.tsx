@@ -12,6 +12,7 @@ import Players from "./pages/Players";
 import ProfileDetail from "./pages/ProfileDetail";
 import Admin from "./pages/Admin";
 import MyAgents from "./pages/MyAgents";
+import EditAgent from "./pages/EditAgent";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -34,6 +35,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Leaderboard />} />
         <Route path="/agents/:id" element={<AgentDetail />} />
+        <Route path="/agents/:id/edit" element={<Protected><EditAgent /></Protected>} />
         <Route path="/create" element={<Protected><CreateAgent /></Protected>} />
         <Route path="/portfolio" element={<Protected><Portfolio /></Protected>} />
         <Route path="/wallet" element={<Protected><Wallet /></Protected>} />

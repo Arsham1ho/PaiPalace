@@ -46,6 +46,8 @@ export const api = {
   checkAgentName: (name: string) => request<{ available: boolean }>(`/api/agents/check-name?name=${encodeURIComponent(name)}`),
   improvePrompt: (prompt: string) => request<{ prompt: string; engine: string }>("/api/agents/improve-prompt", { method: "POST", body: JSON.stringify({ prompt }) }),
   buyAgent: (id: string) => request(`/api/agents/${id}/buy`, { method: "POST" }),
+  updateAgent: (id: string, body: any) => request<Agent>(`/api/agents/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteAgent: (id: string) => request<{ ok: boolean }>(`/api/agents/${id}`, { method: "DELETE" }),
   invest: (id: string, amountUsd: number) =>
     request(`/api/agents/${id}/invest`, { method: "POST", body: JSON.stringify({ amountUsd }) }),
   // wallet (Solana USDC)
