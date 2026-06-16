@@ -13,8 +13,13 @@ model User {
   email         String   @unique
   username      String   @unique
   passwordHash  String
-  // Solana wallet address — null until the user connects their Phantom wallet
+  // Connected external wallet (Phantom/Solflare/…) — null until the user connects
   walletAddress String?  @unique
+  // Dedicated custodial deposit address generated for this user (send-to-deposit)
+  depositAddress String? @unique
+  depositSecret  String? // AES-encrypted secret key for the deposit address
+  // micro-USDC already credited from the deposit address (prevents double-credit)
+  creditedDeposits BigInt @default(0)
   // Internal credited balance, in micro-USDC (1e6 = $1) for integer safety
   balance       BigInt   @default(0)
   isAdmin       Boolean  @default(false)

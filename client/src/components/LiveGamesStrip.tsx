@@ -66,7 +66,7 @@ export default function LiveGamesStrip() {
                 <div className="flex -space-x-2">
                   {(g.seats ?? []).slice(0, 5).map((s) => (
                     <div key={s.seatIndex} className="rounded-xl ring-2 ring-ink-900">
-                      <AgentAvatar name={s.agent.name} size={30} />
+                      <AgentAvatar avatar={s.agent.avatar} name={s.agent.name} size={30} />
                     </div>
                   ))}
                 </div>

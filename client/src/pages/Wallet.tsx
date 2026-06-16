@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { api, type WalletInfo } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Card, Badge, Spinner } from "../components/ui";
-import { Dot } from "../components/icons";
+import { Copy } from "../components/icons";
 import { usd, shortAddr, timeAgo } from "../lib/format";
-import { connectPhantom, depositUsdc, hasPhantom } from "../lib/wallet";
+import DepositModal from "../components/DepositModal";
 
 const TX_TONE: Record<string, "green" | "red" | "ink" | "pink" | "cyan"> = {
   deposit: "green", winnings: "green", withdraw: "red", loss: "red",
   invest: "pink", divest: "cyan", buy_agent: "ink", admin_adjust: "cyan",
 };
 const EXPLORER = (sig: string) => `https://solscan.io/tx/${sig}`;
+const isPlus = (t: string) => ["deposit", "winnings"].includes(t);
+const isMinus = (t: string) => ["withdraw", "loss", "invest", "buy_agent"].includes(t);
 
 export default function Wallet() {
   const { refresh } = useAuth();
@@ -18,31 +20,11 @@ export default function Wallet() {
   const [amount, setAmount] = useState(100);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = () => api.wallet().then(setData);
   useEffect(() => { load(); }, []);
-
-  const connect = async () => {
-    setMsg(""); setBusy(true);
-    try {
-      const address = await connectPhantom();
-      await api.linkWallet(address);
-      await refresh(); await load();
-      setMsg(`Wallet connected: ${shortAddr(address)}`);
-    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
-  };
-
-  const deposit = async () => {
-    if (!(amount > 0)) return;
-    setBusy(true); setMsg("Approve the USDC transfer in Phantom…");
-    try {
-      const signature = await depositUsdc(amount);    // real on-chain USDC transfer (user-signed)
-      setMsg("Confirming on-chain…");
-      const res = await api.deposit(signature);        // server verifies & credits
-      await refresh(); await load();
-      setMsg(`Deposited ${usd(res.amountUsd * 1e6)} — confirmed on Solana.`);
-    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
-  };
 
   const withdraw = async () => {
     if (!(amount > 0)) return;
@@ -53,63 +35,56 @@ export default function Wallet() {
       setMsg(`Withdrew ${usd(amount * 1e6)} — tx ${shortAddr(res.signature)}`);
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };
+  const copyDeposit = async () => { if (data?.depositAddress) { await navigator.clipboard.writeText(data.depositAddress); setCopied(true); setTimeout(() => setCopied(false), 1500); } };
 
   if (!data) return <Spinner />;
-  const linked = !!data.walletAddress;
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
         <Card className="relative overflow-hidden">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand/20 blur-2xl" />
+          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-brand/15 blur-2xl" />
           <div className="relative">
             <div className="text-xs uppercase tracking-wide text-slate-500">Available balance</div>
-            <div className="mt-1 text-4xl font-extrabold">{usd(data.balance)}</div>
-            <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
-              <Badge color="cyan">USDC · Solana</Badge>
-              {linked ? <span className="font-mono">{data.walletAddress}</span> : <span className="text-slate-500">No wallet connected</span>}
-            </div>
+            <div className="tabular mt-1 text-4xl font-extrabold">{usd(data.balance)}</div>
+            <div className="mt-3"><Badge color="cyan">USDC · Solana</Badge></div>
           </div>
         </Card>
 
-        {!linked ? (
-          <Card>
-            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Connect your wallet</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Connect your Phantom (Solana) wallet. Your wallet address becomes your deposit & withdrawal address —
-              non-custodial: you sign every transaction yourself.
-            </p>
-            {hasPhantom() ? (
-              <button className="btn-primary mt-4" disabled={busy} onClick={connect}>Connect Phantom</button>
-            ) : (
-              <a className="btn-primary mt-4 inline-flex" href="https://phantom.app/" target="_blank" rel="noreferrer">Install Phantom</a>
-            )}
-            {msg && <p className="mt-3 text-xs text-brand-light">{msg}</p>}
-          </Card>
-        ) : (
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Deposit / Withdraw USDC</h2>
-              <span className="inline-flex items-center gap-1.5 text-xs text-up"><Dot className="text-up" /> {shortAddr(data.walletAddress)}</span>
-            </div>
-            <div className="mt-4 flex gap-2">
-              <input type="number" min={1} className="input" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-              <button className="btn-primary whitespace-nowrap" disabled={busy || !data.solanaConfigured} onClick={deposit}>Deposit</button>
-              <button className="btn-ghost whitespace-nowrap" disabled={busy || !data.withdrawalsEnabled} onClick={withdraw}>Withdraw</button>
-            </div>
+        <Card>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Deposit & withdraw</h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button className="btn-primary" onClick={() => setDepositOpen(true)}>Deposit</button>
+          </div>
+
+          <div className="mt-4 border-t border-ink-800 pt-4">
+            <div className="text-xs text-slate-400">Withdraw to your connected wallet</div>
             <div className="mt-2 flex gap-2">
-              {[25, 100, 500].map((v) => (
-                <button key={v} onClick={() => setAmount(v)} className="btn-ghost flex-1 !py-1.5 text-xs">${v}</button>
-              ))}
+              <div className="relative flex-1">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                <input type="number" min={1} className="input !pl-6" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
+              </div>
+              <button className="btn-ghost whitespace-nowrap" disabled={busy || !data.walletAddress || !data.withdrawalsEnabled} onClick={withdraw}>Withdraw</button>
             </div>
-            {msg && <p className="mt-3 text-xs text-brand-light">{msg}</p>}
-            <p className="mt-3 text-xs text-slate-500">
-              Deposits send USDC from your wallet to the platform treasury and are verified on-chain before crediting.
-              {!data.withdrawalsEnabled && " Withdrawals are paused until the treasury is funded/configured."}
-            </p>
-            {data.treasuryAddress && (
-              <p className="mt-1 break-all text-xs text-slate-600">Treasury: {data.treasuryAddress}</p>
-            )}
+            {!data.walletAddress && <p className="mt-2 text-xs text-slate-500">Connect a wallet (via Deposit) to enable withdrawals.</p>}
+          </div>
+          {msg && <p className="mt-3 text-xs text-brand-light">{msg}</p>}
+        </Card>
+
+        {/* personal deposit address */}
+        {data.depositAddress && (
+          <Card>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Your deposit address</h2>
+            <p className="mt-1 text-xs text-slate-500">Send USDC (Solana) here to top up directly. Unique to your account.</p>
+            <button onClick={copyDeposit} className="mt-3 flex w-full items-center justify-between gap-2 rounded-xl border border-ink-700 bg-ink-850 p-3 text-left transition hover:border-ink-600">
+              <span className="break-all font-mono text-xs text-slate-300">{data.depositAddress}</span>
+              <span className="shrink-0 text-slate-400">{copied ? <span className="text-xs text-up">Copied</span> : <Copy size={16} />}</span>
+            </button>
+            <button className="btn-ghost mt-2 w-full" disabled={busy} onClick={async () => {
+              setBusy(true); setMsg("Checking the blockchain…");
+              try { const r = await api.syncDeposits(); await refresh(); await load(); setMsg(r.credited > 0 ? `Credited ${usd(r.credited)}` : "No new deposits found yet."); }
+              catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+            }}>Check for deposits</button>
           </Card>
         )}
       </div>
@@ -126,13 +101,15 @@ export default function Wallet() {
                   {t.txHash ? <> · <a className="text-brand-light hover:underline" href={EXPLORER(t.txHash)} target="_blank" rel="noreferrer">{shortAddr(t.txHash)}</a></> : ""}
                 </div>
               </div>
-              <span className={`font-semibold ${["deposit", "winnings"].includes(t.type) ? "text-up" : ["withdraw", "loss", "invest", "buy_agent"].includes(t.type) ? "text-down" : "text-slate-300"}`}>
-                {["deposit", "winnings"].includes(t.type) ? "+" : ["withdraw", "loss", "invest", "buy_agent"].includes(t.type) ? "-" : ""}{usd(t.amount)}
+              <span className={`tabular font-semibold ${isPlus(t.type) ? "text-up" : isMinus(t.type) ? "text-down" : "text-slate-300"}`}>
+                {isPlus(t.type) ? "+" : isMinus(t.type) ? "-" : ""}{usd(t.amount)}
               </span>
             </div>
           )) : <p className="text-sm text-slate-500">No transactions yet.</p>}
         </div>
       </Card>
+
+      <DepositModal open={depositOpen} onClose={() => { setDepositOpen(false); load(); }} />
     </div>
   );
 }

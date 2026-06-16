@@ -4,10 +4,13 @@ import { z } from "zod";
 import { prisma, jsonSafe, fromUsd } from "../db.js";
 import { authMiddleware, adminMiddleware, type AuthedRequest } from "../auth.js";
 import { createGame, runGame, liveGames } from "../game/manager.js";
+import { improvePrompt } from "../agents/improve.js";
 import {
   isValidSolanaAddress,
   verifyUsdcDeposit,
   sendUsdcFromTreasury,
+  generateDepositWallet,
+  getUsdcBalance,
   TREASURY_ADDRESS,
   SOLANA_CONFIGURED,
   WITHDRAWALS_ENABLED,
@@ -29,6 +32,23 @@ export function apiRouter(io: Server) {
       return Number(b.netProfit) - Number(a.netProfit);
     });
     res.json(jsonSafe(mapped));
+  });
+
+  // check agent-name availability (case-insensitive)
+  r.get("/agents/check-name", async (req, res) => {
+    const name = String(req.query.name ?? "").trim();
+    if (name.length < 2) return res.json({ available: false, reason: "too short" });
+    const all = await prisma.agent.findMany({ select: { name: true } });
+    const taken = all.some((a) => a.name.toLowerCase() === name.toLowerCase());
+    res.json({ available: !taken });
+  });
+
+  // improve a strategy prompt (Claude when configured, heuristic otherwise)
+  r.post("/agents/improve-prompt", authMiddleware, async (req: AuthedRequest, res) => {
+    const prompt = String(req.body.prompt ?? "").trim();
+    if (prompt.length < 10) return res.status(400).json({ error: "Write a few words first, then improve it." });
+    const result = await improvePrompt(prompt.slice(0, 2000));
+    res.json(result);
   });
 
   r.get("/agents/:id", async (req, res) => {
@@ -81,7 +101,7 @@ export function apiRouter(io: Server) {
   const createAgentSchema = z.object({
     name: z.string().min(2).max(40),
     prompt: z.string().min(10).max(2000),
-    avatar: z.string().optional(),
+    avatar: z.string().max(400_000).optional(),
     params: z.object({
       aggression: z.number().min(0).max(1).optional(),
       bluffFreq: z.number().min(0).max(1).optional(),
@@ -100,6 +120,11 @@ export function apiRouter(io: Server) {
     const parsed = createAgentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const d = parsed.data;
+    // enforce unique agent name (case-insensitive)
+    const existing = await prisma.agent.findMany({ select: { name: true } });
+    if (existing.some((a) => a.name.toLowerCase() === d.name.trim().toLowerCase())) {
+      return res.status(409).json({ error: "An agent with that name already exists. Choose a unique name." });
+    }
     const agent = await prisma.agent.create({
       data: {
         name: d.name,
@@ -146,18 +171,44 @@ export function apiRouter(io: Server) {
     res.json({ ok: true });
   });
 
-  // ---- WALLET (Solana USDC, non-custodial) ----
+  // ---- WALLET (Solana USDC) ----
   r.get("/wallet", authMiddleware, async (req: AuthedRequest, res) => {
-    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    let user = await prisma.user.findUnique({ where: { id: req.userId } });
+    // backfill: ensure every user has a dedicated deposit address
+    if (user && !user.depositAddress) {
+      const dw = generateDepositWallet();
+      user = await prisma.user.update({ where: { id: user.id }, data: { depositAddress: dw.address, depositSecret: dw.encryptedSecret } });
+    }
     const txs = await prisma.transaction.findMany({ where: { userId: req.userId }, orderBy: { createdAt: "desc" }, take: 100 });
     res.json(jsonSafe({
       balance: user!.balance,
       walletAddress: user!.walletAddress,
+      depositAddress: user!.depositAddress,
       treasuryAddress: TREASURY_ADDRESS || null,
       solanaConfigured: SOLANA_CONFIGURED,
       withdrawalsEnabled: WITHDRAWALS_ENABLED,
       transactions: txs,
     }));
+  });
+
+  // Direct deposit: detect new USDC sent to the user's dedicated deposit address.
+  r.post("/wallet/deposit/sync", authMiddleware, async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user?.depositAddress) return res.status(400).json({ error: "No deposit address" });
+    let onchainUsd: number;
+    try {
+      onchainUsd = await getUsdcBalance(user.depositAddress);
+    } catch (e: any) {
+      return res.status(502).json({ error: "Could not read on-chain balance: " + e.message });
+    }
+    const onchainMicro = fromUsd(onchainUsd);
+    const newMicro = onchainMicro - user.creditedDeposits;
+    if (newMicro <= 0n) return res.json({ ok: true, credited: 0, balance: Number(user.balance) });
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { balance: { increment: newMicro }, creditedDeposits: onchainMicro } }),
+      prisma.transaction.create({ data: { userId: user.id, type: "deposit", amount: newMicro, meta: JSON.stringify({ via: "deposit_address" }) } }),
+    ]);
+    res.json({ ok: true, credited: Number(newMicro) });
   });
 
   // Link the user's connected Phantom (Solana) wallet address.

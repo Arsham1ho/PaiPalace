@@ -61,7 +61,7 @@ export default function AgentDetail() {
         {/* header */}
         <Card>
           <div className="flex items-start gap-4">
-            <AgentAvatar name={agent.name} size={64} />
+            <AgentAvatar avatar={agent.avatar} name={agent.name} size={64} />
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-extrabold tracking-tight">{agent.name}</h1>

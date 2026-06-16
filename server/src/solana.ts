@@ -10,6 +10,7 @@ import {
 } from "@solana/spl-token";
 import { Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
+import crypto from "node:crypto";
 import { env } from "./env.js";
 
 // Mainnet USDC mint by default.
@@ -104,3 +105,41 @@ export async function sendUsdcFromTreasury(
 
 export const SOLANA_CONFIGURED = !!(env.SOLANA_RPC_URL && env.TREASURY_ADDRESS);
 export const WITHDRAWALS_ENABLED = !!env.TREASURY_SECRET;
+
+// ── per-user deposit wallets ──────────────────────────────────────────────
+const ENC_KEY = crypto.createHash("sha256").update(env.WALLET_ENCRYPTION_KEY).digest();
+
+function encryptSecret(plain: string): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", ENC_KEY, iv);
+  const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [iv.toString("base64"), tag.toString("base64"), enc.toString("base64")].join(":");
+}
+
+export function decryptSecret(blob: string): string {
+  const [iv, tag, data] = blob.split(":").map((s) => Buffer.from(s, "base64"));
+  const decipher = crypto.createDecipheriv("aes-256-gcm", ENC_KEY, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+}
+
+/** Generate a fresh custodial deposit wallet (address + encrypted secret). */
+export function generateDepositWallet(): { address: string; encryptedSecret: string } {
+  const kp = Keypair.generate();
+  return { address: kp.publicKey.toBase58(), encryptedSecret: encryptSecret(bs58.encode(kp.secretKey)) };
+}
+
+/** Read the USDC balance (in USD) held by an address. */
+export async function getUsdcBalance(address: string): Promise<number> {
+  try {
+    const accs = await connection.getParsedTokenAccountsByOwner(new PublicKey(address), { mint: USDC_MINT });
+    let total = 0;
+    for (const { account } of accs.value) {
+      total += account.data.parsed?.info?.tokenAmount?.uiAmount ?? 0;
+    }
+    return total;
+  } catch {
+    return 0;
+  }
+}

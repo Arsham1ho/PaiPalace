@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { prisma, jsonSafe } from "./db.js";
 import { env } from "./env.js";
+import { generateDepositWallet } from "./solana.js";
 
 export const authRouter = Router();
 
@@ -44,12 +45,15 @@ authRouter.post("/register", async (req, res) => {
   // Only the designated owner email becomes admin. Everyone else is a normal user.
   const isAdmin = env.ADMIN_EMAIL !== "" && email.toLowerCase() === env.ADMIN_EMAIL.toLowerCase();
 
+  const dw = generateDepositWallet(); // unique custodial deposit address per user
   const user = await prisma.user.create({
     data: {
       email,
       username,
       passwordHash: await bcrypt.hash(password, 10),
-      walletAddress: null, // linked when the user connects their Phantom wallet
+      walletAddress: null, // linked when the user connects their external wallet
+      depositAddress: dw.address,
+      depositSecret: dw.encryptedSecret,
       balance: 0n,
       isAdmin,
     },

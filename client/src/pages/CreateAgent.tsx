@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, agentAvatarUrl } from "../components/ui";
+import { Cpu } from "../components/icons";
 
 interface Params {
   aggression: number; bluffFreq: number; tightness: number; riskTolerance: number;
@@ -20,37 +21,17 @@ const PARAMS: { key: keyof Params; label: string; hint: string }[] = [
 ];
 
 const PRESETS: { name: string; desc: string; prompt: string; params: Params }[] = [
-  {
-    name: "Tight-Aggressive", desc: "Solid, disciplined value",
-    prompt: "You are a disciplined tight-aggressive (TAG) player. Enter pots with strong ranges, bet and raise for value, c-bet relentlessly, and bluff only when the story is credible. Fold marginal spots and avoid coin flips without an edge.",
-    params: { aggression: 0.65, bluffFreq: 0.15, tightness: 0.7, riskTolerance: 0.5, betSizing: 0.55, contBet: 0.7, callingTendency: 0.25, trapping: 0.2 },
-  },
-  {
-    name: "Loose-Aggressive", desc: "High-pressure LAG",
-    prompt: "You are a loose-aggressive (LAG) player. Play a wide range, apply constant pressure with bets and 3-bets, barrel multiple streets, and bluff often. Force opponents into tough decisions and accept high variance.",
-    params: { aggression: 0.85, bluffFreq: 0.4, tightness: 0.25, riskTolerance: 0.8, betSizing: 0.7, contBet: 0.78, callingTendency: 0.3, trapping: 0.15 },
-  },
-  {
-    name: "GTO Balanced", desc: "Unexploitable mix",
-    prompt: "You are a GTO-leaning solver. Make balanced decisions from pot odds, equity and ranges. Mix value and bluffs at the right frequencies to stay unexploitable, size bets by board texture, and avoid emotional plays.",
-    params: { aggression: 0.6, bluffFreq: 0.22, tightness: 0.5, riskTolerance: 0.55, betSizing: 0.6, contBet: 0.65, callingTendency: 0.35, trapping: 0.25 },
-  },
-  {
-    name: "The Nit", desc: "Ultra-tight rock",
-    prompt: "You are an ultra-tight rock. Only play premium hands, almost never bluff, and fold to aggression without a strong holding. Patience is your edge — let opponents pay you off.",
-    params: { aggression: 0.3, bluffFreq: 0.03, tightness: 0.9, riskTolerance: 0.3, betSizing: 0.45, contBet: 0.45, callingTendency: 0.15, trapping: 0.35 },
-  },
-  {
-    name: "Maniac", desc: "Max aggression, high variance",
-    prompt: "You are a maniac. Raise and re-raise relentlessly with a huge range, bluff constantly, and gamble for stacks. Maximum pressure, maximum variance — you live for the action.",
-    params: { aggression: 0.95, bluffFreq: 0.55, tightness: 0.1, riskTolerance: 0.95, betSizing: 0.9, contBet: 0.85, callingTendency: 0.4, trapping: 0.05 },
-  },
-  {
-    name: "Calling Station", desc: "Sticky, hard to bluff",
-    prompt: "You are a calling station. Rarely fold once involved, call down with marginal hands, and let opponents bluff into you. Seldom raise — your edge is catching bluffs.",
-    params: { aggression: 0.3, bluffFreq: 0.05, tightness: 0.3, riskTolerance: 0.5, betSizing: 0.45, contBet: 0.4, callingTendency: 0.85, trapping: 0.3 },
-  },
+  { name: "Tight-Aggressive", desc: "Solid, disciplined value", prompt: "You are a disciplined tight-aggressive (TAG) player. Enter pots with strong ranges, bet and raise for value, c-bet relentlessly, and bluff only when the story is credible. Fold marginal spots and avoid coin flips without an edge.", params: { aggression: 0.65, bluffFreq: 0.15, tightness: 0.7, riskTolerance: 0.5, betSizing: 0.55, contBet: 0.7, callingTendency: 0.25, trapping: 0.2 } },
+  { name: "Loose-Aggressive", desc: "High-pressure LAG", prompt: "You are a loose-aggressive (LAG) player. Play a wide range, apply constant pressure with bets and 3-bets, barrel multiple streets, and bluff often. Force opponents into tough decisions and accept high variance.", params: { aggression: 0.85, bluffFreq: 0.4, tightness: 0.25, riskTolerance: 0.8, betSizing: 0.7, contBet: 0.78, callingTendency: 0.3, trapping: 0.15 } },
+  { name: "GTO Balanced", desc: "Unexploitable mix", prompt: "You are a GTO-leaning solver. Make balanced decisions from pot odds, equity and ranges. Mix value and bluffs at the right frequencies to stay unexploitable, size bets by board texture, and avoid emotional plays.", params: { aggression: 0.6, bluffFreq: 0.22, tightness: 0.5, riskTolerance: 0.55, betSizing: 0.6, contBet: 0.65, callingTendency: 0.35, trapping: 0.25 } },
+  { name: "The Nit", desc: "Ultra-tight rock", prompt: "You are an ultra-tight rock. Only play premium hands, almost never bluff, and fold to aggression without a strong holding. Patience is your edge — let opponents pay you off.", params: { aggression: 0.3, bluffFreq: 0.03, tightness: 0.9, riskTolerance: 0.3, betSizing: 0.45, contBet: 0.45, callingTendency: 0.15, trapping: 0.35 } },
+  { name: "Maniac", desc: "Max aggression, high variance", prompt: "You are a maniac. Raise and re-raise relentlessly with a huge range, bluff constantly, and gamble for stacks. Maximum pressure, maximum variance — you live for the action.", params: { aggression: 0.95, bluffFreq: 0.55, tightness: 0.1, riskTolerance: 0.95, betSizing: 0.9, contBet: 0.85, callingTendency: 0.4, trapping: 0.05 } },
+  { name: "Calling Station", desc: "Sticky, hard to bluff", prompt: "You are a calling station. Rarely fold once involved, call down with marginal hands, and let opponents bluff into you. Seldom raise — your edge is catching bluffs.", params: { aggression: 0.3, bluffFreq: 0.05, tightness: 0.3, riskTolerance: 0.5, betSizing: 0.45, contBet: 0.4, callingTendency: 0.85, trapping: 0.3 } },
 ];
+
+// 20 preset avatars (deterministic generated robots)
+const AVATAR_SEEDS = ["ace", "bluff", "chip", "dealer", "river", "flop", "turn", "shark", "rocket", "fox", "bull", "ghost", "ninja", "viper", "comet", "atlas", "echo", "nova", "pixel", "rogue"];
+const presetAvatar = (seed: string) => `https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${seed}&radius=18&backgroundColor=284f9e,3a6ad0,22d3ee,1b2330`;
 
 function Slider({ label, value, onChange, hint }: { label: string; value: number; onChange: (v: number) => void; hint: string }) {
   return (
@@ -59,56 +40,92 @@ function Slider({ label, value, onChange, hint }: { label: string; value: number
         <span className="text-sm font-medium text-slate-200">{label}</span>
         <span className="text-sm font-semibold text-brand-light">{Math.round(value * 100)}%</span>
       </div>
-      <input type="range" min={0} max={1} step={0.05} value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-2 w-full accent-brand" />
+      <input type="range" min={0} max={1} step={0.05} value={value} onChange={(e) => onChange(Number(e.target.value))} className="mt-2 w-full accent-brand" />
       <p className="mt-1 text-xs text-slate-500">{hint}</p>
     </div>
   );
 }
 
-const styleSummary = (p: Params) => {
-  const loose = p.tightness < 0.45;
-  const aggro = p.aggression > 0.6;
-  const base = `${loose ? "Loose" : "Tight"}-${aggro ? "Aggressive" : "Passive"}`;
-  const tags = [
-    p.bluffFreq > 0.35 && "bluff-heavy",
-    p.callingTendency > 0.6 && "calling station",
-    p.trapping > 0.3 && "trappy",
-    p.betSizing > 0.7 && "big sizing",
-  ].filter(Boolean);
-  return tags.length ? `${base} · ${tags.join(" · ")}` : base;
-};
+// resize an uploaded image to a small square data URL
+function fileToAvatar(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 160;
+        const canvas = document.createElement("canvas");
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext("2d")!;
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function CreateAgent() {
   const nav = useNavigate();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null); // null = generated from name
+  const [nameStatus, setNameStatus] = useState<"idle" | "checking" | "ok" | "taken">("idle");
   const [activePreset, setActivePreset] = useState(0);
   const [prompt, setPrompt] = useState(PRESETS[0].prompt);
+  const [improving, setImproving] = useState(false);
   const [p, setP] = useState<Params>(PRESETS[0].params);
   const [forSale, setForSale] = useState(false);
   const [priceUsd, setPriceUsd] = useState(100);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const applyPreset = (i: number) => {
-    setActivePreset(i);
-    setP({ ...PRESETS[i].params });
-    setPrompt(PRESETS[i].prompt);
-  };
+  // debounced name-availability check
+  useEffect(() => {
+    const n = name.trim();
+    if (n.length < 2) { setNameStatus("idle"); return; }
+    setNameStatus("checking");
+    const t = setTimeout(() => {
+      api.checkAgentName(n).then((r) => setNameStatus(r.available ? "ok" : "taken")).catch(() => setNameStatus("idle"));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [name]);
+
+  const applyPreset = (i: number) => { setActivePreset(i); setP({ ...PRESETS[i].params }); setPrompt(PRESETS[i].prompt); };
   const setParam = (k: keyof Params, v: number) => { setActivePreset(-1); setP((prev) => ({ ...prev, [k]: v })); };
+
+  const improve = async () => {
+    if (prompt.trim().length < 10) return;
+    setImproving(true); setErr("");
+    try { const r = await api.improvePrompt(prompt); setPrompt(r.prompt); setActivePreset(-1); }
+    catch (e: any) { setErr(e.message); } finally { setImproving(false); }
+  };
+
+  const onUpload = async (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setErr("Please choose an image file."); return; }
+    try { setAvatar(await fileToAvatar(file)); } catch { setErr("Could not read that image."); }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (nameStatus === "taken") { setErr("That agent name is taken. Choose a unique name."); return; }
     setErr(""); setBusy(true);
     try {
-      const agent = await api.createAgent({ name, prompt, params: p, forSale, priceUsd });
+      const agent = await api.createAgent({ name: name.trim(), avatar: avatar ?? undefined, prompt, params: p, forSale, priceUsd });
       nav(`/agents/${agent.id}`);
     } catch (e: any) {
       setErr(typeof e.message === "string" ? e.message : "Failed to create agent");
       setBusy(false);
     }
   };
+
+  const previewSrc = avatar ?? agentAvatarUrl(name || "new agent");
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -122,11 +139,49 @@ export default function CreateAgent() {
         {/* identity */}
         <Card>
           <div className="flex items-center gap-4">
-            <img src={agentAvatarUrl(name || "new agent")} alt="avatar preview" className="h-16 w-16 shrink-0 rounded-xl border border-ink-700 bg-ink-800" />
+            <img src={previewSrc} alt="avatar preview" className="h-16 w-16 shrink-0 rounded-xl border border-ink-700 bg-ink-800 object-cover" />
             <div className="flex-1">
               <label className="mb-1 block text-xs font-medium text-slate-400">Agent name</label>
-              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Stone Cold Solver" minLength={2} required />
-              <p className="mt-1 text-xs text-slate-500">A unique avatar is generated from the name. Current style: <span className="text-slate-300">{styleSummary(p)}</span></p>
+              <div className="relative">
+                <input className="input !pr-24" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Stone Cold Solver" minLength={2} maxLength={40} required />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium">
+                  {nameStatus === "checking" && <span className="text-slate-500">checking…</span>}
+                  {nameStatus === "ok" && <span className="text-up">✓ available</span>}
+                  {nameStatus === "taken" && <span className="text-down">✕ taken</span>}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">Agent names are unique. Each agent gets its own ID on creation.</p>
+            </div>
+          </div>
+
+          {/* avatar picker */}
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-400">Agent image</label>
+              <button type="button" onClick={() => fileRef.current?.click()} className="text-xs text-brand-light hover:underline">Upload your own</button>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => onUpload(e.target.files?.[0])} />
+            </div>
+            <div className="grid grid-cols-7 gap-2 sm:grid-cols-11">
+              {/* generated-from-name option */}
+              <button type="button" onClick={() => setAvatar(null)} title="Generated from name"
+                className={`overflow-hidden rounded-lg border ${avatar === null ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
+                <img src={agentAvatarUrl(name || "new agent")} alt="" className="aspect-square w-full" />
+              </button>
+              {AVATAR_SEEDS.map((seed) => {
+                const url = presetAvatar(seed);
+                return (
+                  <button type="button" key={seed} onClick={() => setAvatar(url)} title={seed}
+                    className={`overflow-hidden rounded-lg border ${avatar === url ? "border-brand ring-1 ring-brand" : "border-ink-700 hover:border-ink-600"}`}>
+                    <img src={url} alt="" className="aspect-square w-full" />
+                  </button>
+                );
+              })}
+              {/* uploaded preview tile */}
+              {avatar?.startsWith("data:") && (
+                <div className="overflow-hidden rounded-lg border border-brand ring-1 ring-brand">
+                  <img src={avatar} alt="uploaded" className="aspect-square w-full object-cover" />
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -147,10 +202,16 @@ export default function CreateAgent() {
 
         {/* prompt */}
         <Card>
-          <label className="mb-1 block text-xs font-medium text-slate-400">Strategy prompt</label>
-          <textarea className="input min-h-[140px] resize-y" value={prompt} maxLength={2000}
+          <div className="mb-1 flex items-center justify-between">
+            <label className="text-xs font-medium text-slate-400">Strategy prompt</label>
+            <button type="button" onClick={improve} disabled={improving || prompt.trim().length < 10}
+              className="btn-ghost !px-3 !py-1.5 text-xs">
+              <Cpu size={14} /> {improving ? "Improving…" : "Improve with AI"}
+            </button>
+          </div>
+          <textarea className="input min-h-[150px] resize-y" value={prompt} maxLength={2000}
             onChange={(e) => { setActivePreset(-1); setPrompt(e.target.value); }} required />
-          <p className="mt-1 text-xs text-slate-500">{prompt.length} / 2000 characters</p>
+          <p className="mt-1 text-xs text-slate-500">{prompt.length} / 2000 characters · "Improve with AI" rewrites it into a sharper strategy.</p>
         </Card>
 
         {/* parameters */}
@@ -158,8 +219,7 @@ export default function CreateAgent() {
           <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Parameters</h2>
           <div className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">
             {PARAMS.map((param) => (
-              <Slider key={param.key} label={param.label} hint={param.hint}
-                value={p[param.key]} onChange={(v) => setParam(param.key, v)} />
+              <Slider key={param.key} label={param.label} hint={param.hint} value={p[param.key]} onChange={(v) => setParam(param.key, v)} />
             ))}
           </div>
         </Card>
@@ -179,7 +239,7 @@ export default function CreateAgent() {
         </Card>
 
         {err && <p className="text-sm text-down">{err}</p>}
-        <button className="btn-primary w-full" disabled={busy}>{busy ? "Creating…" : "Create agent"}</button>
+        <button className="btn-primary w-full" disabled={busy || nameStatus === "taken"}>{busy ? "Creating…" : "Create agent"}</button>
       </form>
     </div>
   );
