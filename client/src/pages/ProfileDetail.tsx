@@ -18,7 +18,7 @@ export default function ProfileDetail() {
             {u.username[0].toUpperCase()}
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold">{u.username}</h1>
+            <h1 className="text-3xl font-extrabold">{u.username}</h1>
             <div className="font-mono text-xs text-slate-500">{u.walletAddress}</div>
           </div>
         </div>
@@ -55,7 +55,7 @@ export default function ProfileDetail() {
                 <div key={t.id} className="flex items-center justify-between text-sm">
                   <div>
                     <Badge color={["deposit", "winnings"].includes(t.type) ? "green" : ["withdraw", "loss", "invest"].includes(t.type) ? "red" : "ink"}>{t.type}</Badge>
-                    <span className="ml-2 text-[11px] text-slate-500">{timeAgo(t.createdAt)}</span>
+                    <span className="ml-2 text-xs text-slate-500">{timeAgo(t.createdAt)}</span>
                   </div>
                   <span className="font-semibold text-slate-300">{usd(t.amount)}</span>
                 </div>

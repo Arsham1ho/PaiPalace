@@ -27,7 +27,7 @@ export default {
         down: "#ff5a6a",
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ['"Plus Jakarta Sans"', "Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
         glow: "0 0 24px -4px rgba(47,107,255,0.45)",

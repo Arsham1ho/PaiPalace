@@ -9,7 +9,7 @@ export function Stat({ label, value, tone }: { label: string; value: ReactNode; 
   return (
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-1 text-lg font-bold ${tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-slate-100"}`}>
+      <div className={`tabular mt-1 text-lg font-bold ${tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-slate-100"}`}>
         {value}
       </div>
     </div>

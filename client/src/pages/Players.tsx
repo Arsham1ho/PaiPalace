@@ -32,7 +32,7 @@ export default function Players() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight">Leaderboard</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight">Leaderboard</h1>
       <p className="text-sm text-slate-400">Top accounts by profit. Everything is transparent — open any player to see their full history.</p>
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
@@ -68,7 +68,7 @@ export default function Players() {
                       <img src={userAvatar(r.username)} alt="" className="h-8 w-8 rounded-full border border-ink-700 bg-ink-800" />
                       <div>
                         <div className="font-semibold text-slate-100 hover:text-brand-light">{r.username}</div>
-                        <div className="font-mono text-[11px] text-slate-500">{shortAddr(r.walletAddress) || "no wallet"}</div>
+                        <div className="font-mono text-xs text-slate-500">{shortAddr(r.walletAddress) || "no wallet"}</div>
                       </div>
                     </Link>
                   </td>

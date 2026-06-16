@@ -69,12 +69,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <>
                 <div className="hidden items-center gap-5 sm:flex">
                   <Link to="/portfolio" className="text-center leading-tight">
-                    <div className="text-[11px] text-slate-400">Portfolio</div>
-                    <div className="text-sm font-bold text-up">{usd(portfolioValue ?? user.balance)}</div>
+                    <div className="text-xs text-slate-400">Portfolio</div>
+                    <div className="tabular text-sm font-bold text-up">{usd(portfolioValue ?? user.balance)}</div>
                   </Link>
                   <Link to="/wallet" className="text-center leading-tight">
-                    <div className="text-[11px] text-slate-400">Cash</div>
-                    <div className="text-sm font-bold text-up">{usd(user.balance)}</div>
+                    <div className="text-xs text-slate-400">Cash</div>
+                    <div className="tabular text-sm font-bold text-up">{usd(user.balance)}</div>
                   </Link>
                 </div>
                 <button onClick={() => setDepositOpen(true)} className="btn-primary !px-4 !py-2 text-sm">Deposit</button>
@@ -99,7 +99,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           <img src={userAvatar(user.username)} alt="" className="h-10 w-10 rounded-full border border-ink-700 bg-ink-800" />
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-sm font-semibold text-slate-100">{user.username}</div>
-                            <div className="truncate font-mono text-[11px] text-slate-500">{user.walletAddress ? shortAddr(user.walletAddress) : user.email}</div>
+                            <div className="truncate font-mono text-xs text-slate-500">{user.walletAddress ? shortAddr(user.walletAddress) : user.email}</div>
                           </div>
                           <button onClick={() => { setProfileOpen(false); nav("/settings"); }} title="Settings" className="text-slate-400 transition hover:text-slate-100">
                             <Settings size={18} />

@@ -118,7 +118,7 @@ export default function GameTable() {
         {/* street progress */}
         <div className="mb-3 flex gap-1.5">
           {STREETS.map((s, i) => (
-            <div key={s} className={`flex-1 rounded-full py-1 text-center text-[10px] font-semibold uppercase tracking-wide transition ${
+            <div key={s} className={`flex-1 rounded-full py-1 text-center text-[11px] font-semibold uppercase tracking-wide transition ${
               i === streetIdx ? "bg-brand text-white" : i < streetIdx ? "bg-brand/25 text-brand-light" : "bg-ink-800 text-slate-600"}`}>
               {s}
             </div>
@@ -152,7 +152,7 @@ export default function GameTable() {
             <div className="flex items-center gap-2 rounded-full border border-white/10 bg-ink-950/70 px-4 py-1.5 shadow-lg">
               <span className="inline-block h-3 w-3 rounded-full bg-brand ring-2 ring-brand-light/40" />
               <span className="text-sm font-bold text-white">{table?.pot ?? 0}</span>
-              <span className="text-[10px] uppercase tracking-wide text-slate-400">pot</span>
+              <span className="text-[11px] uppercase tracking-wide text-slate-400">pot</span>
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export default function GameTable() {
                   : "border-ink-700 bg-ink-900/85"}`}>
 
                   {pos3 && (
-                    <span className={`absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                    <span className={`absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${
                       pos3 === "D" ? "bg-white text-ink-950" : "bg-ink-700 text-slate-200"}`}>{pos3}</span>
                   )}
 
@@ -186,23 +186,23 @@ export default function GameTable() {
                     ))}
                   </div>
 
-                  <div className="mt-1.5 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200">
+                  <div className="mt-1.5 flex items-center justify-center gap-1 text-xs font-bold text-slate-200">
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-brand/70" /> {s.stack}
                   </div>
 
                   {win ? (
-                    <div className="mt-1 text-[10px] font-bold text-up animate-fade">WON +{win.amount} · {win.hand}</div>
+                    <div className="mt-1 text-[11px] font-bold text-up animate-fade">WON +{win.amount} · {win.hand}</div>
                   ) : s.lastAction ? (
-                    <div className={`mx-auto mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase animate-chip ${ACTION_STYLE[s.lastAction.type] ?? "bg-ink-700 text-slate-300"}`}>
+                    <div className={`mx-auto mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase animate-chip ${ACTION_STYLE[s.lastAction.type] ?? "bg-ink-700 text-slate-300"}`}>
                       {s.lastAction.type}{s.lastAction.amount ? ` ${s.lastAction.amount}` : ""}
                     </div>
                   ) : active ? (
-                    <div className="mt-1 text-[10px] text-brand-light">thinking…</div>
+                    <div className="mt-1 text-[11px] text-brand-light">thinking…</div>
                   ) : null}
 
                   {/* committed chips toward the pot */}
                   {s.committed > 0 && !win && (
-                    <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-950/90 px-2 py-0.5 text-[10px] font-semibold text-pai-cyan">
+                    <span className="absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink-950/90 px-2 py-0.5 text-[11px] font-semibold text-pai-cyan">
                       {s.committed}
                     </span>
                   )}
@@ -219,7 +219,7 @@ export default function GameTable() {
               {[...summary].sort((a, b) => b.finalStack - a.finalStack).map((s, i) => (
                 <div key={s.agentId} className="flex items-center justify-between rounded-lg bg-ink-850/50 px-3 py-2 text-sm">
                   <span className="flex items-center gap-2">
-                    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? "bg-up/20 text-up" : "bg-ink-700 text-slate-400"}`}>{i + 1}</span>
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-up/20 text-up" : "bg-ink-700 text-slate-400"}`}>{i + 1}</span>
                     <AgentAvatar name={s.agentName} size={22} /> {s.agentName}
                   </span>
                   <span className={s.netChips >= 0 ? "text-up" : "text-down"}>
@@ -236,7 +236,7 @@ export default function GameTable() {
       <div>
         <Card className="lg:sticky lg:top-20">
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Live AI decisions</h2>
-          <p className="mt-1 text-[11px] text-slate-500">Every action and its reasoning — fully transparent.</p>
+          <p className="mt-1 text-xs text-slate-500">Every action and its reasoning — fully transparent.</p>
           <div className="mt-3 max-h-[64vh] space-y-2 overflow-y-auto pr-1">
             {feed.length ? feed.map((f, i) => (
               <div key={i} className={`rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm ${i === 0 ? "animate-fade" : ""}`}>
@@ -244,12 +244,12 @@ export default function GameTable() {
                   <span className="flex items-center gap-2 font-semibold text-slate-200">
                     <AgentAvatar name={f.agentName} size={20} /> {f.agentName}
                   </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${ACTION_STYLE[f.action] ?? "bg-ink-700 text-slate-300"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${ACTION_STYLE[f.action] ?? "bg-ink-700 text-slate-300"}`}>
                     {f.action}{f.amount ? ` ${f.amount}` : ""}
                   </span>
                 </div>
                 {f.reasoning && <p className="mt-1 text-xs text-slate-400">{f.reasoning}</p>}
-                <div className="mt-1 text-[10px] text-slate-600">{f.engine === "claude" ? "Claude" : "Simulated"}</div>
+                <div className="mt-1 text-[11px] text-slate-600">{f.engine === "claude" ? "Claude" : "Simulated"}</div>
               </div>
             )) : <p className="text-sm text-slate-500">Waiting for the action to begin…</p>}
           </div>

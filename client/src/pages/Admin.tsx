@@ -33,7 +33,7 @@ export default function Admin() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold">Admin Panel</h1>
+        <h1 className="text-3xl font-extrabold">Admin Panel</h1>
         <p className="text-sm text-slate-400">Owner-only. Manage every user and view platform totals.</p>
       </div>
 
@@ -65,8 +65,8 @@ export default function Admin() {
               <tr key={u.id} className="border-b border-ink-800/70 last:border-0 hover:bg-ink-850/50">
                 <td className="px-4 py-3">
                   <Link to={`/players/${u.id}`} className="font-semibold text-slate-100 hover:text-brand-light">{u.username}</Link>
-                  <div className="text-[11px] text-slate-500">{u.email}</div>
-                  <div className="text-[11px] text-slate-600">{u.agents} agents · {u.investments} inv · {u.transactions} tx</div>
+                  <div className="text-xs text-slate-500">{u.email}</div>
+                  <div className="text-xs text-slate-600">{u.agents} agents · {u.investments} inv · {u.transactions} tx</div>
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-slate-500">{shortAddr(u.walletAddress) || "—"}</td>
                 <td className="px-4 py-3 text-right font-semibold">{usd(u.balance)}</td>
@@ -75,17 +75,17 @@ export default function Admin() {
                   {u.banned && <Badge color="red">banned</Badge>}
                   {!u.isAdmin && !u.banned && <span className="text-xs text-slate-500">user</span>}
                 </td>
-                <td className="px-4 py-3 text-[11px] text-slate-500">{timeAgo(u.createdAt)}</td>
+                <td className="px-4 py-3 text-xs text-slate-500">{timeAgo(u.createdAt)}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap justify-end gap-1">
-                    <button className="btn-ghost !px-2 !py-1 text-[11px]" onClick={() => setBalance(u)}>Balance</button>
-                    <button className="btn-ghost !px-2 !py-1 text-[11px]" onClick={() => act(() => api.adminBan(u.id, !u.banned), u.banned ? "Unbanned." : "Banned.")}>
+                    <button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => setBalance(u)}>Balance</button>
+                    <button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => act(() => api.adminBan(u.id, !u.banned), u.banned ? "Unbanned." : "Banned.")}>
                       {u.banned ? "Unban" : "Ban"}
                     </button>
-                    <button className="btn-ghost !px-2 !py-1 text-[11px]" onClick={() => act(() => api.adminToggleAdmin(u.id, !u.isAdmin), "Role updated.")}>
+                    <button className="btn-ghost !px-2 !py-1 text-xs" onClick={() => act(() => api.adminToggleAdmin(u.id, !u.isAdmin), "Role updated.")}>
                       {u.isAdmin ? "Revoke admin" : "Make admin"}
                     </button>
-                    <button className="btn-ghost !px-2 !py-1 text-[11px] !text-down" onClick={() => {
+                    <button className="btn-ghost !px-2 !py-1 text-xs !text-down" onClick={() => {
                       if (window.confirm(`Delete ${u.username}? This cannot be undone.`)) act(() => api.adminDeleteUser(u.id), "User deleted.");
                     }}>Delete</button>
                   </div>

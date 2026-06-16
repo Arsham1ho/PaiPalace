@@ -23,7 +23,7 @@ export default function TopPlayers() {
             <img src={userAvatar(r.username)} alt="" className="h-8 w-8 rounded-full border border-ink-700 bg-ink-800" />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold text-slate-100">{r.username}</div>
-              <div className="font-mono text-[11px] text-slate-500">{shortAddr(r.walletAddress) || "no wallet"}</div>
+              <div className="font-mono text-xs text-slate-500">{shortAddr(r.walletAddress) || "no wallet"}</div>
             </div>
             <span className={`text-sm font-semibold ${r.profit >= 0 ? "text-up" : "text-down"}`}>
               {r.profit >= 0 ? "+" : ""}{usd(r.profit)}

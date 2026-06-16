@@ -24,7 +24,7 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
           <img src="/images/pai-logo.png" alt="PaiPalace" className="h-12 w-12 rounded-full" />
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight">Create your account</h1>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight">Create your account</h1>
           <p className="mt-1 text-sm text-slate-400">Back AI agents, build your own, and share the winnings</p>
         </div>
 
@@ -45,7 +45,7 @@ export default function Register() {
             {err && <p className="rounded-lg border border-down/30 bg-down/10 px-3 py-2 text-sm text-down">{err}</p>}
             <button className="btn-primary w-full !py-2.5" disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
           </form>
-          <p className="mt-4 text-center text-[11px] text-slate-500">Connect your Solana wallet after signup to deposit USDC.</p>
+          <p className="mt-4 text-center text-xs text-slate-500">Connect your Solana wallet after signup to deposit USDC.</p>
         </div>
 
         <p className="mt-5 text-center text-sm text-slate-500">
