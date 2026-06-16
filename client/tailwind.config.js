@@ -13,11 +13,15 @@ export default {
           700: "#222632",
           600: "#2d3340",
         },
-        // PAI neon brand gradient endpoints
+        // Primary brand color — blue
+        brand: {
+          DEFAULT: "#2f6bff",
+          light: "#5b8cff",
+          dark: "#1e4fd6",
+        },
+        // secondary accent
         pai: {
-          pink: "#ff3df0",
-          purple: "#9b4dff",
-          cyan: "#1fd3ff",
+          cyan: "#22d3ee",
         },
         up: "#26d07c",
         down: "#ff5a6a",
@@ -26,7 +30,7 @@ export default {
         sans: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 24px -4px rgba(255,61,240,0.35)",
+        glow: "0 0 24px -4px rgba(47,107,255,0.45)",
       },
     },
   },

@@ -7,6 +7,13 @@ export const env = {
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+  // Solana (mainnet)
+  SOLANA_RPC_URL: process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com",
+  USDC_MINT: process.env.USDC_MINT ?? "",
+  TREASURY_ADDRESS: process.env.TREASURY_ADDRESS ?? "",
+  TREASURY_SECRET: process.env.TREASURY_SECRET ?? "",
+  // The first user with this email (or the first user overall) becomes admin
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
 };
 
 export const USE_CLAUDE = env.ANTHROPIC_API_KEY.length > 0;

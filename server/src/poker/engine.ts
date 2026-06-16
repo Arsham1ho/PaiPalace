@@ -184,6 +184,10 @@ export function applyAction(state: HandState, action: PlayerAction): void {
   }
 
   seat.acted = true;
+  seat.lastAction = {
+    type: action.type,
+    amount: action.type === "fold" || action.type === "check" ? 0 : seat.committed,
+  };
   state.log.push(`${seat.agentName} ${desc}`);
   state.toAct = nextActor(state, state.toAct);
 }
@@ -220,6 +224,7 @@ export function advanceStreet(state: HandState): void {
   for (const s of state.seats) {
     s.committed = 0;
     s.acted = false;
+    s.lastAction = undefined;
   }
   state.currentBet = 0;
   state.minRaise = state.bigBlind;

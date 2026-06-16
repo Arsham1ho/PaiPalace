@@ -29,12 +29,6 @@ export default function Portfolio() {
           {chart.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chart} margin={{ left: -10, right: 10, top: 10 }}>
-                <defs>
-                  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff3df0" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="#1fd3ff" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#222632" />
                 <XAxis dataKey="label" tick={{ fill: "#64748b", fontSize: 11 }} stroke="#222632" />
                 <YAxis tick={{ fill: "#64748b", fontSize: 11 }} stroke="#222632" tickFormatter={(v) => usdPlain(v)} />
@@ -42,7 +36,7 @@ export default function Portfolio() {
                   contentStyle={{ background: "#13151d", border: "1px solid #2d3340", borderRadius: 12, color: "#e2e8f0" }}
                   formatter={(v: any) => [usdPlain(Number(v)), "Value"]}
                 />
-                <Area type="monotone" dataKey="value" stroke="#ff3df0" strokeWidth={2} fill="url(#g)" />
+                <Area type="monotone" dataKey="value" stroke="#2f6bff" strokeWidth={2} fill="#2f6bff" fillOpacity={0.15} />
               </AreaChart>
             </ResponsiveContainer>
           ) : (
@@ -59,7 +53,7 @@ export default function Portfolio() {
           {data.investments.length ? (
             <div className="space-y-2">
               {data.investments.map((inv) => (
-                <Link to={`/agents/${inv.agent.id}`} key={inv.id} className="card flex items-center gap-3 p-4 hover:border-pai-purple/60">
+                <Link to={`/agents/${inv.agent.id}`} key={inv.id} className="card flex items-center gap-3 p-4 hover:border-brand/60">
                   <AgentAvatar avatar={inv.agent.avatar} name={inv.agent.name} />
                   <div className="flex-1">
                     <div className="font-semibold">{inv.agent.name}</div>
@@ -77,7 +71,7 @@ export default function Portfolio() {
           {data.ownedAgents.length ? (
             <div className="space-y-2">
               {data.ownedAgents.map((a) => (
-                <Link to={`/agents/${a.id}`} key={a.id} className="card flex items-center gap-3 p-4 hover:border-pai-purple/60">
+                <Link to={`/agents/${a.id}`} key={a.id} className="card flex items-center gap-3 p-4 hover:border-brand/60">
                   <AgentAvatar avatar={a.avatar} name={a.name} />
                   <div className="flex-1">
                     <div className="font-semibold">{a.name}</div>

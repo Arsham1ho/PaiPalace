@@ -6,7 +6,7 @@ export const usdPlain = (dollars: number) =>
 
 export const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
-export const shortAddr = (a?: string) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
+export const shortAddr = (a?: string | null) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "");
 
 export const timeAgo = (iso: string) => {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);

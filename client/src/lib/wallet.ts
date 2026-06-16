@@ -1,30 +1,58 @@
-// Lightweight EVM wallet connect via the injected provider (MetaMask, etc.).
-// No API key required. Mainnet-ready, defaults to a testnet via VITE_CHAIN_ID.
-import { createWalletClient, custom, type WalletClient } from "viem";
+// Non-custodial Solana wallet integration (Phantom) — USDC on mainnet.
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import {
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountIdempotentInstruction,
+  createTransferInstruction,
+} from "@solana/spl-token";
 
-const CHAIN_ID = Number(import.meta.env.VITE_CHAIN_ID ?? 84532); // Base Sepolia testnet
+const RPC = import.meta.env.VITE_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+const USDC = new PublicKey(import.meta.env.VITE_USDC_MINT ?? "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+const TREASURY_STR = import.meta.env.VITE_TREASURY_ADDRESS ?? "";
+const USDC_DECIMALS = 6;
 
-export interface ConnectedWallet {
-  address: string;
-  chainId: number;
+export const connection = new Connection(RPC, "confirmed");
+export const hasTreasury = TREASURY_STR.length > 0;
+
+function getProvider(): any {
+  const w = window as any;
+  const p = w.phantom?.solana ?? w.solana;
+  if (!p?.isPhantom) return null;
+  return p;
 }
 
-export function hasInjectedWallet(): boolean {
-  return typeof window !== "undefined" && !!(window as any).ethereum;
+export function hasPhantom(): boolean {
+  return !!getProvider();
 }
 
-export async function connectWallet(): Promise<ConnectedWallet> {
-  const eth = (window as any).ethereum;
-  if (!eth) throw new Error("No EVM wallet found. Install MetaMask or a compatible wallet.");
-  const accounts: string[] = await eth.request({ method: "eth_requestAccounts" });
-  const chainIdHex: string = await eth.request({ method: "eth_chainId" });
-  return { address: accounts[0], chainId: parseInt(chainIdHex, 16) };
+export async function connectPhantom(): Promise<string> {
+  const provider = getProvider();
+  if (!provider) throw new Error("Phantom wallet not found. Install it from phantom.app.");
+  const res = await provider.connect();
+  return res.publicKey.toString();
 }
 
-export function getWalletClient(): WalletClient {
-  const eth = (window as any).ethereum;
-  return createWalletClient({ transport: custom(eth) });
-}
+/** Build, sign (via Phantom) and send a USDC transfer to the treasury. Returns the tx signature. */
+export async function depositUsdc(amountUsd: number): Promise<string> {
+  const provider = getProvider();
+  if (!provider) throw new Error("Phantom wallet not found.");
+  if (!hasTreasury) throw new Error("Treasury address not configured.");
+  const owner = new PublicKey(provider.publicKey.toString());
+  const treasury = new PublicKey(TREASURY_STR);
 
-export const TARGET_CHAIN_ID = CHAIN_ID;
-export const IS_TESTNET = CHAIN_ID !== 1 && CHAIN_ID !== 8453 && CHAIN_ID !== 137;
+  const fromAta = await getAssociatedTokenAddress(USDC, owner);
+  const toAta = await getAssociatedTokenAddress(USDC, treasury);
+  const amountRaw = BigInt(Math.round(amountUsd * 10 ** USDC_DECIMALS));
+
+  const tx = new Transaction().add(
+    // create the treasury's USDC token account if it doesn't exist yet (idempotent)
+    createAssociatedTokenAccountIdempotentInstruction(owner, toAta, treasury, USDC),
+    createTransferInstruction(fromAta, toAta, owner, amountRaw),
+  );
+  tx.feePayer = owner;
+  tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+  const { signature } = await provider.signAndSendTransaction(tx);
+  await connection.confirmTransaction(signature, "confirmed");
+  return signature;
+}

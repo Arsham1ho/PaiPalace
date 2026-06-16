@@ -40,12 +40,14 @@ export const api = {
   buyAgent: (id: string) => request(`/api/agents/${id}/buy`, { method: "POST" }),
   invest: (id: string, amountUsd: number) =>
     request(`/api/agents/${id}/invest`, { method: "POST", body: JSON.stringify({ amountUsd }) }),
-  // wallet
-  wallet: () => request<{ balance: number; walletAddress: string; transactions: Tx[] }>("/api/wallet"),
-  deposit: (amountUsd: number, txHash?: string) =>
-    request("/api/wallet/deposit", { method: "POST", body: JSON.stringify({ amountUsd, txHash }) }),
-  withdraw: (amountUsd: number, txHash?: string) =>
-    request("/api/wallet/withdraw", { method: "POST", body: JSON.stringify({ amountUsd, txHash }) }),
+  // wallet (Solana USDC)
+  wallet: () => request<WalletInfo>("/api/wallet"),
+  linkWallet: (address: string) =>
+    request<{ ok: boolean; walletAddress: string }>("/api/wallet/link", { method: "POST", body: JSON.stringify({ address }) }),
+  deposit: (signature: string) =>
+    request<{ ok: boolean; amountUsd: number }>("/api/wallet/deposit", { method: "POST", body: JSON.stringify({ signature }) }),
+  withdraw: (amountUsd: number) =>
+    request<{ ok: boolean; signature: string }>("/api/wallet/withdraw", { method: "POST", body: JSON.stringify({ amountUsd }) }),
   // portfolio
   portfolio: () => request<Portfolio>("/api/portfolio"),
   // games
@@ -55,15 +57,44 @@ export const api = {
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),
+  // admin
+  adminStats: () => request<AdminStats>("/api/admin/stats"),
+  adminUsers: () => request<AdminUser[]>("/api/admin/users"),
+  adminSetBalance: (id: string, setUsd: number) =>
+    request(`/api/admin/users/${id}/balance`, { method: "POST", body: JSON.stringify({ setUsd }) }),
+  adminBan: (id: string, banned: boolean) =>
+    request(`/api/admin/users/${id}/ban`, { method: "POST", body: JSON.stringify({ banned }) }),
+  adminToggleAdmin: (id: string, isAdmin: boolean) =>
+    request(`/api/admin/users/${id}/admin`, { method: "POST", body: JSON.stringify({ isAdmin }) }),
+  adminDeleteUser: (id: string) => request(`/api/admin/users/${id}`, { method: "DELETE" }),
 };
+
+export interface WalletInfo {
+  balance: number;
+  walletAddress: string | null;
+  treasuryAddress: string | null;
+  solanaConfigured: boolean;
+  withdrawalsEnabled: boolean;
+  transactions: Tx[];
+}
+export interface AdminStats {
+  users: number; agents: number; games: number; decisions: number;
+  totalBalance: number; totalDeposits: number; totalWithdrawals: number;
+}
+export interface AdminUser {
+  id: string; email: string; username: string; walletAddress: string | null;
+  balance: number; isAdmin: boolean; banned: boolean; createdAt: string;
+  agents: number; investments: number; transactions: number;
+}
 
 // ---- types ----
 export interface User {
   id: string;
   email: string;
   username: string;
-  walletAddress: string;
+  walletAddress: string | null;
   balance: number;
+  isAdmin?: boolean;
   createdAt: string;
 }
 export interface Agent {
@@ -133,7 +164,7 @@ export interface Portfolio {
 export interface PublicUser {
   id: string;
   username: string;
-  walletAddress: string;
+  walletAddress: string | null;
   balance: number;
   agents: number;
   investments: number;
@@ -142,7 +173,7 @@ export interface PublicUser {
 export interface PublicUserDetail {
   id: string;
   username: string;
-  walletAddress: string;
+  walletAddress: string | null;
   balance: number;
   createdAt: string;
   agents: Agent[];

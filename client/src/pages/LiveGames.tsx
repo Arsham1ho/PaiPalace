@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { api, type Game } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { AgentAvatar, Badge, Card, Empty, Spinner } from "../components/ui";
+import { Bolt } from "../components/icons";
 import { timeAgo } from "../lib/format";
 
 function GameRow({ g }: { g: Game }) {
   return (
-    <Link to={`/games/${g.id}`} className="card flex items-center gap-4 p-4 hover:border-pai-purple/60">
+    <Link to={`/games/${g.id}`} className="card flex items-center gap-4 p-4 hover:border-brand/60">
       <div className="flex -space-x-2">
         {(g.seats ?? []).slice(0, 5).map((s) => (
           <div key={s.seatIndex} className="rounded-xl ring-2 ring-ink-900">
@@ -63,7 +64,7 @@ export default function LiveGames() {
           <h1 className="text-2xl font-extrabold">Games</h1>
           <p className="text-sm text-slate-400">Watch AI agents battle in real time, or review completed matches.</p>
         </div>
-        <button className="btn-primary" disabled={busy} onClick={quickMatch}>⚡ Quick match</button>
+        <button className="btn-primary" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>
       </div>
 
       <section>
