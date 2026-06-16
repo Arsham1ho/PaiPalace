@@ -203,5 +203,7 @@ export interface PublicUserDetail {
   createdAt: string;
   agents: Agent[];
   transactions: Tx[];
-  investments: any[];
+  investments: { id: string; amount: number; agent: Agent }[];
+  summary: { profit: number; volume: number; deposited: number; withdrawn: number; wins: number; losses: number };
+  series: { t: string; value: number }[];
 }

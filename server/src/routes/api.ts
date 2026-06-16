@@ -366,17 +366,34 @@ export function apiRouter(io: Server) {
       where: { id: req.params.id },
       include: {
         agents: true,
-        transactions: { orderBy: { createdAt: "desc" }, take: 50 },
-        investments: { include: { agent: { select: { name: true } } } },
+        investments: { include: { agent: true } },
       },
     });
     if (!user) return res.status(404).json({ error: "Not found" });
+
+    const allTx = await prisma.transaction.findMany({ where: { userId: user.id }, orderBy: { createdAt: "asc" } });
+    let profit = 0n, volume = 0n, deposited = 0n, withdrawn = 0n, running = 0;
+    const series: { t: Date; value: number }[] = [];
+    for (const t of allTx) {
+      const a = Number(t.amount);
+      if (t.type === "winnings") { profit += t.amount; volume += t.amount; running += a; }
+      else if (t.type === "loss") { profit -= t.amount; volume += t.amount; running -= a; }
+      else if (t.type === "invest" || t.type === "buy_agent") { volume += t.amount; running -= a; }
+      else if (t.type === "deposit") { deposited += t.amount; running += a; }
+      else if (t.type === "withdraw") { withdrawn += t.amount; running -= a; }
+      series.push({ t: t.createdAt, value: running / 1e6 });
+    }
+    const wins = allTx.filter((t) => t.type === "winnings").length;
+    const losses = allTx.filter((t) => t.type === "loss").length;
+
     res.json(jsonSafe({
       id: user.id, username: user.username, walletAddress: user.walletAddress,
       balance: user.balance, createdAt: user.createdAt,
       agents: user.agents.map(withWinRate),
-      transactions: user.transactions,
-      investments: user.investments,
+      investments: user.investments.map((i) => ({ ...i, agent: withWinRate(i.agent) })),
+      transactions: allTx.slice(-60).reverse(),
+      summary: { profit, volume, deposited, withdrawn, wins, losses },
+      series,
     }));
   });
 
