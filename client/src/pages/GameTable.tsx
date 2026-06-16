@@ -208,8 +208,8 @@ export default function GameTable() {
           </div>
 
           {/* seats */}
-          {seats.map((s) => {
-            const pos = seatPos(s.seatIndex, n);
+          {seats.map((s, idx) => {
+            const pos = seatPos(idx, n);
             const active = table?.toAct === s.seatIndex && status === "running";
             const win = winnerOf(s.seatIndex);
             const pos3 = table?.dealerSeat === s.seatIndex ? "D" : table?.sbSeat === s.seatIndex ? "SB" : table?.bbSeat === s.seatIndex ? "BB" : null;
