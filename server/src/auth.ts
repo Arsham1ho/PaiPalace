@@ -76,6 +76,28 @@ authRouter.get("/me", authMiddleware, async (req: AuthedRequest, res) => {
   res.json({ user: publicUser(user) });
 });
 
+// Update profile (username)
+authRouter.patch("/account", authMiddleware, async (req: AuthedRequest, res) => {
+  const username = String(req.body.username ?? "").trim();
+  if (username.length < 3 || username.length > 24) return res.status(400).json({ error: "Username must be 3–24 characters" });
+  const taken = await prisma.user.findFirst({ where: { username, NOT: { id: req.userId } } });
+  if (taken) return res.status(409).json({ error: "Username already taken" });
+  const user = await prisma.user.update({ where: { id: req.userId }, data: { username } });
+  res.json({ user: publicUser(user) });
+});
+
+// Change password
+authRouter.post("/account/password", authMiddleware, async (req: AuthedRequest, res) => {
+  const { currentPassword, newPassword } = req.body ?? {};
+  if (!newPassword || String(newPassword).length < 6) return res.status(400).json({ error: "New password must be at least 6 characters" });
+  const user = await prisma.user.findUnique({ where: { id: req.userId } });
+  if (!user || !(await bcrypt.compare(String(currentPassword ?? ""), user.passwordHash))) {
+    return res.status(401).json({ error: "Current password is incorrect" });
+  }
+  await prisma.user.update({ where: { id: req.userId }, data: { passwordHash: await bcrypt.hash(String(newPassword), 10) } });
+  res.json({ ok: true });
+});
+
 export function publicUser(u: any) {
   return jsonSafe({
     id: u.id,

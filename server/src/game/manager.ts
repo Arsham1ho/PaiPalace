@@ -247,7 +247,7 @@ async function finishGame(
         data: {
           userId: meta.userId,
           type: netChips >= 0 ? "winnings" : "loss",
-          amount: netMicro,
+          amount: netMicro < 0n ? -netMicro : netMicro, // store magnitude; type carries the sign
           meta: JSON.stringify({ gameId, agentId: meta.id, netChips }),
         },
       });
@@ -267,7 +267,7 @@ async function finishGame(
           data: {
             userId: inv.userId,
             type: netChips >= 0 ? "winnings" : "loss",
-            amount: share,
+            amount: share < 0n ? -share : share, // store magnitude; type carries the sign
             meta: JSON.stringify({ gameId, agentId: meta.id, viaInvestment: true }),
           },
         });
