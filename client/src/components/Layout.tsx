@@ -11,8 +11,6 @@ const NAV = [
   { to: "/", label: "Leaderboard", end: true },
   { to: "/live", label: "Live & Past Games" },
   { to: "/create", label: "Create Agent" },
-  { to: "/portfolio", label: "Portfolio" },
-  { to: "/wallet", label: "Wallet" },
   { to: "/players", label: "Players" },
 ];
 
@@ -36,20 +34,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
             <img src="/images/pai-logo.png" alt="PaiPalace" className="h-9 w-9 rounded-full" />
-            <span className="text-lg font-extrabold tracking-tight">
+            <span className="text-xl font-bold tracking-tight">
               Pai<span className="brand-accent">Palace</span>
             </span>
           </Link>
 
-          <nav className="ml-4 hidden items-center gap-1 md:flex">
+          <nav className="ml-6 hidden items-center gap-6 md:flex">
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                    isActive ? "bg-ink-800 text-white" : "text-slate-400 hover:text-slate-100"
+                  `text-[15px] font-medium tracking-tight transition ${
+                    isActive ? "text-white" : "text-slate-400 hover:text-white"
                   }`
                 }
               >
@@ -58,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             ))}
             {user?.isAdmin && (
               <NavLink to="/admin" className={({ isActive }) =>
-                `rounded-lg px-3 py-1.5 text-sm font-medium transition ${isActive ? "bg-ink-800 text-brand-light" : "text-brand-light/80 hover:text-brand-light"}`}>
+                `text-[15px] font-medium tracking-tight transition ${isActive ? "text-brand-light" : "text-brand-light/80 hover:text-brand-light"}`}>
                 Admin
               </NavLink>
             )}
