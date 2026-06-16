@@ -11,6 +11,10 @@ const PARAM_LABELS: Record<string, string> = {
   bluffFreq: "Bluff frequency",
   tightness: "Tightness",
   riskTolerance: "Risk tolerance",
+  betSizing: "Bet sizing",
+  contBet: "Continuation betting",
+  callingTendency: "Calling tendency",
+  trapping: "Trapping / slow-play",
 };
 
 export default function AgentDetail() {

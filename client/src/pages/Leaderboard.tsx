@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type Agent } from "../lib/api";
 import { AgentAvatar, Badge, ProfitText, Spinner, WinRate } from "../components/ui";
+import LiveGamesStrip from "../components/LiveGamesStrip";
 import { usd, pct } from "../lib/format";
 
 const SORTS = [
@@ -43,6 +44,9 @@ export default function Leaderboard() {
           </div>
         </div>
       </section>
+
+      {/* Live games */}
+      <LiveGamesStrip />
 
       {/* Podium */}
       {agents && topThree.length > 0 && (
