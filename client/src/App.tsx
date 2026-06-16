@@ -8,6 +8,7 @@ import Portfolio from "./pages/Portfolio";
 import Wallet from "./pages/Wallet";
 import LiveGames from "./pages/LiveGames";
 import GameTable from "./pages/GameTable";
+import Lobby from "./pages/Lobby";
 import Players from "./pages/Players";
 import ProfileDetail from "./pages/ProfileDetail";
 import Admin from "./pages/Admin";
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/settings" element={<Protected><Settings /></Protected>} />
         <Route path="/live" element={<LiveGames />} />
         <Route path="/games/:id" element={<GameTable />} />
+        <Route path="/rooms/:id" element={<Protected><Lobby /></Protected>} />
         <Route path="/players" element={<Players />} />
         <Route path="/players/:id" element={<ProfileDetail />} />
         <Route path="/admin" element={<AdminOnly><Admin /></AdminOnly>} />

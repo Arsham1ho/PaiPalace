@@ -1,30 +1,43 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, type Game } from "../lib/api";
+import { api, type Game, type RoomSummary } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { AgentAvatar, Badge, Card, Empty, Spinner } from "../components/ui";
-import { Bolt } from "../components/icons";
-import { timeAgo } from "../lib/format";
+import { Bolt, Users } from "../components/icons";
+import { timeAgo, usd } from "../lib/format";
+import CreateRoomModal from "../components/CreateRoomModal";
 
 function GameRow({ g }: { g: Game }) {
   return (
     <Link to={`/games/${g.id}`} className="card flex items-center gap-4 p-4 hover:border-brand/60">
       <div className="flex -space-x-2">
         {(g.seats ?? []).slice(0, 5).map((s) => (
-          <div key={s.seatIndex} className="rounded-xl ring-2 ring-ink-900">
-            <AgentAvatar avatar={s.agent.avatar} name={s.agent.name} size={34} />
-          </div>
+          <div key={s.seatIndex} className="rounded-xl ring-2 ring-ink-900"><AgentAvatar avatar={s.agent.avatar} name={s.agent.name} size={34} /></div>
         ))}
       </div>
       <div className="flex-1">
         <div className="font-semibold">{g.name}</div>
-        <div className="text-xs text-slate-500">
-          {g.seats?.length ?? 0} agents · blinds {g.smallBlind}/{g.bigBlind} · {timeAgo(g.createdAt)}
-        </div>
+        <div className="text-xs text-slate-500">{g.seats?.length ?? 0} agents · blinds {g.smallBlind}/{g.bigBlind} · {timeAgo(g.createdAt)}</div>
       </div>
       {g.status === "running" ? <Badge color="pink">● LIVE · hand {g.handNumber}</Badge>
-        : g.status === "finished" ? <Badge color="green">Finished</Badge>
-        : <Badge color="ink">Waiting</Badge>}
+        : g.status === "finished" ? <Badge color="green">Finished</Badge> : <Badge color="ink">Waiting</Badge>}
+    </Link>
+  );
+}
+
+function RoomCard({ r }: { r: RoomSummary }) {
+  return (
+    <Link to={`/rooms/${r.id}`} className="card flex items-center gap-4 p-4 hover:border-brand/60">
+      <div className="flex -space-x-2">
+        {r.seats.slice(0, 5).map((s) => (
+          <div key={s.seatIndex} className="rounded-xl ring-2 ring-ink-900"><AgentAvatar avatar={s.agent.avatar} name={s.agent.name} size={34} /></div>
+        ))}
+      </div>
+      <div className="flex-1">
+        <div className="font-semibold">{r.name}</div>
+        <div className="text-xs text-slate-500">{r.players}/{r.maxPlayers} players · entry {usd(r.entryMicro)} · prize {usd(r.prizePool)}</div>
+      </div>
+      <span className="btn-primary !px-4 !py-1.5 text-xs">Join</span>
     </Link>
   );
 }
@@ -33,24 +46,31 @@ export default function LiveGames() {
   const { user } = useAuth();
   const nav = useNavigate();
   const [games, setGames] = useState<Game[] | null>(null);
+  const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [busy, setBusy] = useState(false);
+  const [roomModal, setRoomModal] = useState(false);
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const load = () => api.games().then(setGames);
-  useEffect(() => {
-    load();
-    const t = setInterval(load, 4000);
-    return () => clearInterval(t);
-  }, []);
+  const load = () => { api.games().then(setGames); api.rooms().then(setRooms).catch(() => setRooms([])); };
+  useEffect(() => { load(); const t = setInterval(load, 4000); return () => clearInterval(t); }, []);
 
   const quickMatch = async () => {
     if (!user) return nav("/login");
     setBusy(true);
     try {
       const agents = await api.agents("elo");
-      const picks = agents.slice(0, 4).map((a) => a.id);
-      const game = await api.createGame({ name: "Quick Match", buyInChips: 1000, smallBlind: 5, bigBlind: 10, agentIds: picks });
+      const game = await api.createGame({ name: "Quick Match", buyInChips: 1000, smallBlind: 5, bigBlind: 10, agentIds: agents.slice(0, 4).map((a) => a.id) });
       nav(`/games/${game.id}`);
     } catch { setBusy(false); }
+  };
+
+  const joinByCode = async () => {
+    if (!user) return nav("/login");
+    if (!code.trim()) return;
+    setMsg("");
+    try { const { id } = await api.roomByCode(code.trim().toUpperCase()); nav(`/rooms/${id}`); }
+    catch { setMsg("No room found with that code."); }
   };
 
   if (!games) return <Spinner />;
@@ -59,18 +79,35 @@ export default function LiveGames() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold">Games</h1>
-          <p className="text-sm text-slate-400">Watch AI agents battle in real time, or review completed matches.</p>
+          <p className="text-sm text-slate-400">Play other players for real money, or watch AI agents battle.</p>
         </div>
-        <button className="btn-primary" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button className="btn-primary" disabled={busy} onClick={() => (user ? setRoomModal(true) : nav("/login"))}><Users size={15} /> Create room</button>
+          <button className="btn-ghost" disabled={busy} onClick={quickMatch}><Bolt size={15} /> Quick match</button>
+        </div>
       </div>
+
+      {/* Rooms — play vs other players */}
+      <section>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold">Rooms · play vs players</h2>
+          <div className="flex items-center gap-2">
+            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Enter room code" className="input !w-40 !py-1.5 text-sm uppercase" />
+            <button onClick={joinByCode} className="btn-ghost !py-1.5 text-sm">Join by code</button>
+          </div>
+        </div>
+        {msg && <p className="mb-2 text-sm text-down">{msg}</p>}
+        {rooms.length ? <div className="space-y-2">{rooms.map((r) => <RoomCard key={r.id} r={r} />)}</div>
+          : <Empty>No open rooms. <button onClick={() => (user ? setRoomModal(true) : nav("/login"))} className="text-brand-light">Create one →</button> Private rooms join via code/link.</Empty>}
+      </section>
 
       <section>
         <h2 className="mb-3 text-lg font-bold">Live tables</h2>
         {live.length ? <div className="space-y-2">{live.map((g) => <GameRow key={g.id} g={g} />)}</div>
-          : <Empty>No live tables right now. Start a Quick match to spin one up.</Empty>}
+          : <Empty>No live tables right now.</Empty>}
       </section>
 
       <section>
@@ -78,6 +115,8 @@ export default function LiveGames() {
         {past.length ? <div className="space-y-2">{past.map((g) => <GameRow key={g.id} g={g} />)}</div>
           : <Empty>No completed games yet.</Empty>}
       </section>
+
+      <CreateRoomModal open={roomModal} onClose={() => setRoomModal(false)} />
     </div>
   );
 }

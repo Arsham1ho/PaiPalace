@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Server } from "socket.io";
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma, jsonSafe, fromUsd } from "../db.js";
 import { authMiddleware, adminMiddleware, type AuthedRequest } from "../auth.js";
@@ -449,6 +450,109 @@ export function apiRouter(io: Server) {
     });
     runGame(io, game.id).catch((e) => console.error("[test] run failed", e));
     res.json(jsonSafe(game));
+  });
+
+  // ---- MULTIPLAYER ROOMS ----
+  const ROOM_BUYIN = 1000;
+  const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
+  const roomSummary = (rm: any) => ({
+    id: rm.id, name: rm.name, players: rm.seats.length, maxPlayers: 6,
+    entryMicro: rm.entryMicro, prizePool: rm.prizePool, smallBlind: rm.smallBlind, bigBlind: rm.bigBlind,
+    visibility: rm.visibility, status: rm.status, createdAt: rm.createdAt,
+    seats: rm.seats.map((s: any) => ({ seatIndex: s.seatIndex, agent: s.agent })),
+  });
+
+  r.post("/rooms", authMiddleware, async (req: AuthedRequest, res) => {
+    const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10 } = req.body ?? {};
+    if (!["public", "private"].includes(visibility)) return res.status(400).json({ error: "Invalid visibility" });
+    const entry = fromUsd(Number(entryUsd) || 0);
+    const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
+    if (!agent) return res.status(404).json({ error: "Agent not found" });
+    if (agent.ownerId !== req.userId) return res.status(403).json({ error: "Use one of your own agents" });
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user || user.balance < entry) return res.status(402).json({ error: "Insufficient balance for the entry fee" });
+    let code = genCode();
+    for (let i = 0; i < 5; i++) { if (!(await prisma.game.findUnique({ where: { roomCode: code } }))) break; code = genCode(); }
+    const passwordHash = visibility === "private" && password ? await bcrypt.hash(String(password), 10) : null;
+    const game = await prisma.game.create({
+      data: {
+        name: `${user.username}'s Room`, isRoom: true, status: "lobby", visibility, roomCode: code, passwordHash,
+        hostId: user.id, smallBlind: BigInt(smallBlind), bigBlind: BigInt(bigBlind),
+        buyIn: BigInt(ROOM_BUYIN), entryMicro: entry, prizePool: entry,
+      },
+    });
+    await prisma.seat.create({ data: { gameId: game.id, agentId: agent.id, userId: user.id, seatIndex: 0, stack: BigInt(ROOM_BUYIN), startStack: BigInt(ROOM_BUYIN) } });
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { balance: { decrement: entry } } }),
+      prisma.transaction.create({ data: { userId: user.id, type: "room_entry", amount: entry, meta: JSON.stringify({ gameId: game.id }) } }),
+    ]);
+    res.json(jsonSafe({ id: game.id, roomCode: code }));
+  });
+
+  r.get("/rooms", async (_req, res) => {
+    const rooms = await prisma.game.findMany({
+      where: { isRoom: true, status: "lobby", visibility: "public" },
+      include: { seats: { include: { agent: { select: { name: true, avatar: true } } } } },
+      orderBy: { createdAt: "desc" }, take: 50,
+    });
+    res.json(jsonSafe(rooms.map(roomSummary)));
+  });
+
+  r.get("/rooms/code/:code", async (req, res) => {
+    const room = await prisma.game.findUnique({ where: { roomCode: req.params.code.toUpperCase() } });
+    if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
+    res.json({ id: room.id });
+  });
+
+  r.get("/rooms/:id", authMiddleware, async (req: AuthedRequest, res) => {
+    const room = await prisma.game.findUnique({
+      where: { id: req.params.id },
+      include: { seats: { include: { agent: { select: { name: true, avatar: true } }, user: { select: { id: true, username: true } } }, orderBy: { seatIndex: "asc" } } },
+    });
+    if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
+    res.json(jsonSafe({
+      id: room.id, name: room.name, status: room.status, visibility: room.visibility, roomCode: room.roomCode,
+      entryMicro: room.entryMicro, prizePool: room.prizePool, smallBlind: room.smallBlind, bigBlind: room.bigBlind,
+      hostId: room.hostId, isHost: room.hostId === req.userId,
+      needsPassword: room.visibility === "private" && !!room.passwordHash,
+      joined: room.seats.some((s) => s.userId === req.userId),
+      maxPlayers: 6,
+      players: room.seats.map((s) => ({ seatIndex: s.seatIndex, userId: s.userId, username: s.user?.username, agent: s.agent })),
+    }));
+  });
+
+  r.post("/rooms/:id/join", authMiddleware, async (req: AuthedRequest, res) => {
+    const { agentId, password } = req.body ?? {};
+    const room = await prisma.game.findUnique({ where: { id: req.params.id }, include: { seats: true } });
+    if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
+    if (room.status !== "lobby") return res.status(400).json({ error: "Room has already started" });
+    if (room.seats.length >= 6) return res.status(400).json({ error: "Room is full" });
+    if (room.seats.some((s) => s.userId === req.userId)) return res.status(400).json({ error: "You're already in this room" });
+    if (room.visibility === "private" && room.passwordHash) {
+      if (!password || !(await bcrypt.compare(String(password), room.passwordHash))) return res.status(401).json({ error: "Wrong password" });
+    }
+    const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
+    if (!agent || agent.ownerId !== req.userId) return res.status(403).json({ error: "Use one of your own agents" });
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user || user.balance < room.entryMicro) return res.status(402).json({ error: "Insufficient balance for the entry fee" });
+    await prisma.$transaction([
+      prisma.seat.create({ data: { gameId: room.id, agentId: agent.id, userId: user.id, seatIndex: room.seats.length, stack: room.buyIn, startStack: room.buyIn } }),
+      prisma.user.update({ where: { id: user.id }, data: { balance: { decrement: room.entryMicro } } }),
+      prisma.game.update({ where: { id: room.id }, data: { prizePool: { increment: room.entryMicro } } }),
+      prisma.transaction.create({ data: { userId: user.id, type: "room_entry", amount: room.entryMicro, meta: JSON.stringify({ gameId: room.id }) } }),
+    ]);
+    res.json({ ok: true });
+  });
+
+  r.post("/rooms/:id/start", authMiddleware, async (req: AuthedRequest, res) => {
+    const room = await prisma.game.findUnique({ where: { id: req.params.id }, include: { seats: true } });
+    if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
+    if (room.hostId !== req.userId) return res.status(403).json({ error: "Only the host can start" });
+    if (room.status !== "lobby") return res.status(400).json({ error: "Already started" });
+    if (room.seats.length < 2) return res.status(400).json({ error: "Need at least 2 players to start" });
+    await prisma.game.update({ where: { id: room.id }, data: { status: "waiting" } });
+    runGame(io, room.id).catch((e) => console.error("[room] run failed", e));
+    res.json({ ok: true });
   });
 
   // ---- PUBLIC PLATFORM STATS ----
