@@ -29,6 +29,9 @@ export const Users = ({ className, size }: P) => (
 export const Dot = ({ className, size = 8 }: P) => (
   <svg width={size} height={size} viewBox="0 0 8 8" className={className}><circle cx="4" cy="4" r="4" fill="currentColor" /></svg>
 );
+export const Dots = ({ className, size = 18 }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}><circle cx="12" cy="5" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="12" cy="19" r="1.7" /></svg>
+);
 export const Gift = ({ className, size }: P) => (
   <svg {...base(size)} className={className}><path d="M20 12v9H4v-9M2 7h20v5H2zM12 22V7M12 7S11 2 7.5 2 5 5.5 8 7M12 7s1-5 4.5-5S19 5.5 16 7" /></svg>
 );
