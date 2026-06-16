@@ -40,6 +40,7 @@ export const api = {
   // agents
   agents: (sort = "profit") => request<Agent[]>(`/api/agents?sort=${sort}`),
   agent: (id: string) => request<Agent>(`/api/agents/${id}`),
+  agentPerformance: (id: string) => request<AgentPerformance>(`/api/agents/${id}/performance`),
   createAgent: (body: any) => request<Agent>("/api/agents", { method: "POST", body: JSON.stringify(body) }),
   buyAgent: (id: string) => request(`/api/agents/${id}/buy`, { method: "POST" }),
   invest: (id: string, amountUsd: number) =>
@@ -62,6 +63,7 @@ export const api = {
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),
   leaderboard: (period = "all") => request<AccountRow[]>(`/api/leaderboard?period=${period}`),
+  stats: () => request<PlatformStats>("/api/stats"),
   // admin
   adminStats: () => request<AdminStats>("/api/admin/stats"),
   adminUsers: () => request<AdminUser[]>("/api/admin/users"),
@@ -109,7 +111,7 @@ export interface Agent {
   prompt: string;
   params: string;
   ownerId?: string | null;
-  owner?: { username: string } | null;
+  owner?: { id: string; username: string } | null;
   forSale: boolean;
   price: number;
   handsPlayed: number;
@@ -120,7 +122,12 @@ export interface Agent {
   createdAt: string;
   decisions?: Decision[];
   investments?: any[];
+  fielders?: { id: string; username: string }[];
   _count?: { investments: number };
+}
+export interface AgentPerformance {
+  series: { t: string; gameId: string; name: string; netMicro: number; cumMicro: number }[];
+  record: { games: number; wins: number; losses: number; profitMicro: number; lossMicro: number; netMicro: number };
 }
 export interface Decision {
   id: string;
@@ -165,6 +172,9 @@ export interface Portfolio {
   investments: { id: string; amount: number; agent: Agent }[];
   ownedAgents: Agent[];
   series: { t: string; value: number; type: string }[];
+}
+export interface PlatformStats {
+  agents: number; players: number; games: number; decisions: number; liveGames: number; hands: number;
 }
 export interface AccountRow {
   id: string;
