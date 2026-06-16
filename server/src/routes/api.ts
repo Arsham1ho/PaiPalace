@@ -151,6 +151,66 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe(withWinRate(agent)));
   });
 
+  // edit an agent (owner only)
+  const updateAgentSchema = z.object({
+    name: z.string().min(2).max(40).optional(),
+    prompt: z.string().min(10).max(2000).optional(),
+    avatar: z.string().max(400_000).optional(),
+    params: z.object({
+      aggression: z.number().min(0).max(1).optional(),
+      bluffFreq: z.number().min(0).max(1).optional(),
+      tightness: z.number().min(0).max(1).optional(),
+      riskTolerance: z.number().min(0).max(1).optional(),
+      betSizing: z.number().min(0).max(1).optional(),
+      contBet: z.number().min(0).max(1).optional(),
+      callingTendency: z.number().min(0).max(1).optional(),
+      trapping: z.number().min(0).max(1).optional(),
+    }).optional(),
+    forSale: z.boolean().optional(),
+    priceUsd: z.number().min(0).optional(),
+  });
+  r.patch("/agents/:id", authMiddleware, async (req: AuthedRequest, res) => {
+    const agent = await prisma.agent.findUnique({ where: { id: req.params.id } });
+    if (!agent) return res.status(404).json({ error: "Not found" });
+    if (agent.ownerId !== req.userId) return res.status(403).json({ error: "Not your agent" });
+    const parsed = updateAgentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const d = parsed.data;
+    if (d.name && d.name.trim().toLowerCase() !== agent.name.toLowerCase()) {
+      const all = await prisma.agent.findMany({ select: { name: true } });
+      if (all.some((a) => a.name.toLowerCase() === d.name!.trim().toLowerCase())) {
+        return res.status(409).json({ error: "An agent with that name already exists." });
+      }
+    }
+    const updated = await prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        name: d.name?.trim() ?? undefined,
+        prompt: d.prompt ?? undefined,
+        avatar: d.avatar ?? undefined,
+        params: d.params ? JSON.stringify(d.params) : undefined,
+        forSale: d.forSale ?? undefined,
+        price: d.priceUsd !== undefined ? fromUsd(d.priceUsd) : undefined,
+      },
+    });
+    res.json(jsonSafe(withWinRate(updated)));
+  });
+
+  // delete an agent (owner only; blocked if it has investors)
+  r.delete("/agents/:id", authMiddleware, async (req: AuthedRequest, res) => {
+    const agent = await prisma.agent.findUnique({ where: { id: req.params.id } });
+    if (!agent) return res.status(404).json({ error: "Not found" });
+    if (agent.ownerId !== req.userId) return res.status(403).json({ error: "Not your agent" });
+    const investors = await prisma.investment.count({ where: { agentId: agent.id } });
+    if (investors > 0) return res.status(400).json({ error: "Can't delete an agent with active backers. Unlist and refund first." });
+    await prisma.$transaction([
+      prisma.decision.deleteMany({ where: { agentId: agent.id } }),
+      prisma.seat.deleteMany({ where: { agentId: agent.id } }),
+      prisma.agent.delete({ where: { id: agent.id } }),
+    ]);
+    res.json({ ok: true });
+  });
+
   r.post("/agents/:id/buy", authMiddleware, async (req: AuthedRequest, res) => {
     const agent = await prisma.agent.findUnique({ where: { id: req.params.id } });
     if (!agent || !agent.forSale) return res.status(400).json({ error: "Agent not for sale" });

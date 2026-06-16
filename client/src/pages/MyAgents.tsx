@@ -54,7 +54,7 @@ export default function MyAgents() {
             <div><div className="text-xs text-slate-500">Hands</div><span className="font-semibold">{a.handsPlayed}</span></div>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2">
-            <Link to={`/agents/${a.id}`} className="btn-ghost justify-center !py-1.5 text-[11px]">View</Link>
+            <Link to={`/agents/${a.id}/edit`} className="btn-ghost justify-center !py-1.5 text-[11px]">Manage</Link>
             <button disabled={!!busy} onClick={() => startTable(a)} className="btn-ghost justify-center !py-1.5 text-[11px]"><Play size={12} /> Live</button>
             <button disabled={!!busy} onClick={() => testMatch(a)} className="btn-primary justify-center !py-1.5 text-[11px]">{busy === a.id ? "…" : "Test $5"}</button>
           </div>
