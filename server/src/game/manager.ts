@@ -295,14 +295,17 @@ async function finishGame(
   // Real multiplayer ELO update from the finishing order (pairwise, K=24).
   if (!practice) await updateElo(summary);
 
-  // Room: winner takes the whole prize pool.
+  // Room: the best-finishing HUMAN player takes the whole prize pool
+  // (AI opponents can win chips but never the cash pool).
   let prizeWinnerUserId: string | null = null;
-  if (isRoom && prizePool > 0n && winnerAgent) {
-    const champ = [...metaBySeat.values()].find((m) => m.id === winnerAgent);
-    if (champ?.userId) {
-      prizeWinnerUserId = champ.userId;
-      await prisma.user.update({ where: { id: champ.userId }, data: { balance: { increment: prizePool } } });
-      await prisma.transaction.create({ data: { userId: champ.userId, type: "winnings", amount: prizePool, meta: JSON.stringify({ gameId, room: true }) } });
+  if (isRoom && prizePool > 0n) {
+    let bestStack = -1;
+    for (const [seatIndex, meta] of metaBySeat) {
+      if (meta.userId && (stacks[seatIndex] ?? 0) > bestStack) { bestStack = stacks[seatIndex] ?? 0; prizeWinnerUserId = meta.userId; }
+    }
+    if (prizeWinnerUserId) {
+      await prisma.user.update({ where: { id: prizeWinnerUserId }, data: { balance: { increment: prizePool } } });
+      await prisma.transaction.create({ data: { userId: prizeWinnerUserId, type: "winnings", amount: prizePool, meta: JSON.stringify({ gameId, room: true }) } });
     }
   }
 
