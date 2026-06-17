@@ -67,6 +67,39 @@ const ACTION_STYLE: Record<string, string> = {
 };
 const STREETS = ["preflop", "flop", "turn", "river"];
 
+// One live-decision card. Reasoning collapses to two lines by default and
+// expands on click so the feed stays compact.
+function FeedCard({ f, highlight }: { f: FeedItem; highlight: boolean }) {
+  const [open, setOpen] = useState(false);
+  const engineLabel = f.engine === "grok" ? "🧠 Reasoned by Grok" : f.engine === "claude" ? "🧠 Reasoned by Claude" : "⚙️ Simulated strategy engine";
+  return (
+    <div className={`rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm ${highlight ? "animate-fade" : ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-2 font-semibold text-slate-200">
+          <AgentAvatar name={f.agentName} size={20} /> {f.agentName}
+        </span>
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${ACTION_STYLE[f.action] ?? "bg-ink-700 text-slate-300"}`}>
+          {f.action}{f.amount ? ` ${f.amount}` : ""}
+        </span>
+      </div>
+      {f.reasoning && (
+        <div className="mt-1.5">
+          <div
+            onClick={() => setOpen((o) => !o)}
+            className={`cursor-pointer whitespace-pre-line border-l-2 border-ink-700 pl-2.5 text-xs leading-relaxed text-slate-300 ${open ? "" : "line-clamp-2"}`}
+          >
+            {f.reasoning}
+          </div>
+          <button type="button" onClick={() => setOpen((o) => !o)} className="mt-1 pl-2.5 text-[11px] font-medium text-pai-cyan/80 hover:text-pai-cyan">
+            {open ? "Show less ▲" : "Show reasoning ▼"}
+          </button>
+        </div>
+      )}
+      <div className="mt-1.5 text-[11px] text-slate-600">{engineLabel}</div>
+    </div>
+  );
+}
+
 export default function GameTable() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -326,20 +359,7 @@ export default function GameTable() {
           <p className="mt-1 text-xs text-slate-500">{feedFilter === "mine" ? "Your agent's reasoning for every decision." : "Every action and its reasoning — fully transparent."}</p>
           <div className="mt-3 max-h-[64vh] space-y-2 overflow-y-auto pr-1">
             {visibleFeed.length ? visibleFeed.map((f, i) => (
-              <div key={i} className={`rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm ${i === 0 ? "animate-fade" : ""}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 font-semibold text-slate-200">
-                    <AgentAvatar name={f.agentName} size={20} /> {f.agentName}
-                  </span>
-                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase ${ACTION_STYLE[f.action] ?? "bg-ink-700 text-slate-300"}`}>
-                    {f.action}{f.amount ? ` ${f.amount}` : ""}
-                  </span>
-                </div>
-                {f.reasoning && (
-                  <p className="mt-1.5 whitespace-pre-line border-l-2 border-ink-700 pl-2.5 text-xs leading-relaxed text-slate-300">{f.reasoning}</p>
-                )}
-                <div className="mt-1.5 text-[11px] text-slate-600">{f.engine === "claude" ? "🧠 Reasoned by Claude" : "⚙️ Simulated strategy engine"}</div>
-              </div>
+              <FeedCard key={i} f={f} highlight={i === 0} />
             )) : <p className="text-sm text-slate-500">{feedFilter === "mine" ? "No decisions from your agent yet." : "Waiting for the action to begin…"}</p>}
           </div>
         </Card>
