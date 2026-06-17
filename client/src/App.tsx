@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
+import ScrollToTop from "./components/ScrollToTop";
 import { useAuth } from "./context/AuthContext";
 import Leaderboard from "./pages/Leaderboard";
 import AgentDetail from "./pages/AgentDetail";
@@ -33,6 +34,7 @@ function AdminOnly({ children }: { children: JSX.Element }) {
 export default function App() {
   return (
     <Layout>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Leaderboard />} />
         <Route path="/agents/:id" element={<AgentDetail />} />
