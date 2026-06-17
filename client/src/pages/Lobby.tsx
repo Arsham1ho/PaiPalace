@@ -62,6 +62,11 @@ export default function Lobby() {
     try { await api.startRoom(room.id); /* poll will redirect to table */ }
     catch (e: any) { setMsg(e.message); setBusy(false); }
   };
+  const addBot = async () => {
+    setBusy(true); setMsg("");
+    try { await api.addRoomBot(room.id); await load(); }
+    catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
 
   const seats = [...room.players, ...Array.from({ length: room.maxPlayers - room.players.length })];
 
@@ -102,7 +107,7 @@ export default function Lobby() {
               <AgentAvatar avatar={s.agent.avatar} name={s.agent.name} size={32} />
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold">{s.agent.name}</div>
-                <div className="truncate text-[11px] text-slate-500">{s.username ?? "player"}{s.userId === room.hostId ? " · host" : ""}</div>
+                <div className="truncate text-[11px] text-slate-500">{s.userId ? (s.username ?? "player") : "AI opponent"}{s.userId && s.userId === room.hostId ? " · host" : ""}</div>
               </div>
             </div>
           ) : (
@@ -136,8 +141,10 @@ export default function Lobby() {
           <div className="space-y-2">
             <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">You're the host</h2>
             <button className="btn-primary w-full" disabled={busy || room.players.length < 2} onClick={start}>
-              {room.players.length < 2 ? "Waiting for players (need 2+)" : `Start game · ${room.players.length} players`}
+              {room.players.length < 2 ? "Add a player or an AI opponent to start" : `Start game · ${room.players.length} players`}
             </button>
+            <button className="btn-ghost w-full" disabled={busy || room.players.length >= room.maxPlayers} onClick={addBot}>+ Add AI opponent</button>
+            <p className="text-center text-[11px] text-slate-500">Invite friends with the link/code, or fill seats with house AI. The prize pool always goes to the best human player.</p>
           </div>
         ) : (
           <p className="text-sm text-slate-400">You're in. Waiting for the host to start the game…</p>

@@ -73,6 +73,7 @@ export const api = {
   createRoom: (body: any) => request<{ id: string; roomCode: string }>("/api/rooms", { method: "POST", body: JSON.stringify(body) }),
   joinRoom: (id: string, body: any) => request(`/api/rooms/${id}/join`, { method: "POST", body: JSON.stringify(body) }),
   startRoom: (id: string) => request(`/api/rooms/${id}/start`, { method: "POST" }),
+  addRoomBot: (id: string) => request(`/api/rooms/${id}/add-bot`, { method: "POST" }),
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),

@@ -546,6 +546,21 @@ export function apiRouter(io: Server) {
     res.json({ ok: true });
   });
 
+  // host adds a house AI opponent to fill a seat
+  r.post("/rooms/:id/add-bot", authMiddleware, async (req: AuthedRequest, res) => {
+    const room = await prisma.game.findUnique({ where: { id: req.params.id }, include: { seats: true } });
+    if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
+    if (room.hostId !== req.userId) return res.status(403).json({ error: "Only the host can add opponents" });
+    if (room.status !== "lobby") return res.status(400).json({ error: "Already started" });
+    if (room.seats.length >= 6) return res.status(400).json({ error: "Room is full" });
+    const used = room.seats.map((s) => s.agentId);
+    const bot = await prisma.agent.findFirst({ where: { ownerId: null, id: { notIn: used } } });
+    if (!bot) return res.status(400).json({ error: "No house agents available" });
+    await prisma.seat.create({ data: { gameId: room.id, agentId: bot.id, userId: null, seatIndex: room.seats.length, stack: room.buyIn, startStack: room.buyIn } });
+    io.to(roomChannel(room.id)).emit("room:update", { id: room.id });
+    res.json({ ok: true });
+  });
+
   r.post("/rooms/:id/start", authMiddleware, async (req: AuthedRequest, res) => {
     const room = await prisma.game.findUnique({ where: { id: req.params.id }, include: { seats: true } });
     if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
