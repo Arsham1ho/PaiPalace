@@ -1,0 +1,19 @@
+# Local-development Postgres (production parity). Start with:
+#   docker compose up -d db
+# then point server/.env DATABASE_URL at it (see .env.example) and run:
+#   pnpm --filter @paipalace/server exec prisma migrate deploy && pnpm seed
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paipalace
+      POSTGRES_PASSWORD: paipalace
+      POSTGRES_DB: paipalace
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

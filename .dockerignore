@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+.git
+.gitignore
+**/.env
+**/.env.local
+*.db
+**/*.db
+server/prisma/*.db*
+contracts
+.vscode
+*.md
+!server/prisma/migrations

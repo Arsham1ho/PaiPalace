@@ -1,4 +1,7 @@
-const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
+// In production the API is served from the same origin (empty base → relative
+// URLs). In dev it falls back to the local server. Override with VITE_API_URL
+// to point at a separately-hosted backend.
+const BASE = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 let token: string | null = localStorage.getItem("pp_token");
 
