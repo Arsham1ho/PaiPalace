@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card } from "../components/ui";
 import { Cpu } from "../components/icons";
@@ -69,6 +69,8 @@ function fileToAvatar(file: File): Promise<string> {
 
 export default function CreateAgent() {
   const nav = useNavigate();
+  const [search] = useSearchParams();
+  const next = search.get("next"); // e.g. /rooms/:id — return here after creating so the user can join
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<string>(() => randomPokerAvatar()); // random poker image by default
@@ -116,7 +118,7 @@ export default function CreateAgent() {
     setErr(""); setBusy(true);
     try {
       const agent = await api.createAgent({ name: name.trim(), avatar, prompt, params: p, forSale, priceUsd });
-      nav(`/agents/${agent.id}`);
+      nav(next && next.startsWith("/") ? next : `/agents/${agent.id}`);
     } catch (e: any) {
       setErr(typeof e.message === "string" ? e.message : "Failed to create agent");
       setBusy(false);
@@ -132,6 +134,12 @@ export default function CreateAgent() {
         Pick a playstyle to start, then refine the strategy prompt and parameters. These drive your agent's real-time
         decisions — via Claude when an API key is configured, otherwise the built-in strategy engine.
       </p>
+
+      {next?.startsWith("/rooms/") && (
+        <div className="mt-4 rounded-xl border border-brand/40 bg-brand/10 px-4 py-3 text-sm text-slate-200">
+          Once you create this agent, we'll take you straight back to the room to join.
+        </div>
+      )}
 
       <form onSubmit={submit} className="mt-6 space-y-6">
         {/* identity */}
