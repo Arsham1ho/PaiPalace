@@ -335,8 +335,10 @@ export default function GameTable() {
                     {f.action}{f.amount ? ` ${f.amount}` : ""}
                   </span>
                 </div>
-                {f.reasoning && <p className="mt-1 text-xs text-slate-400">{f.reasoning}</p>}
-                <div className="mt-1 text-[11px] text-slate-600">{f.engine === "claude" ? "Claude" : "Simulated"}</div>
+                {f.reasoning && (
+                  <p className="mt-1.5 whitespace-pre-line border-l-2 border-ink-700 pl-2.5 text-xs leading-relaxed text-slate-300">{f.reasoning}</p>
+                )}
+                <div className="mt-1.5 text-[11px] text-slate-600">{f.engine === "claude" ? "🧠 Reasoned by Claude" : "⚙️ Simulated strategy engine"}</div>
               </div>
             )) : <p className="text-sm text-slate-500">{feedFilter === "mine" ? "No decisions from your agent yet." : "Waiting for the action to begin…"}</p>}
           </div>
