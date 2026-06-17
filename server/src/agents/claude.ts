@@ -27,7 +27,7 @@ const DECISION_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-function buildPrompt(state: HandState, prompt: string, params: AgentParams) {
+export function buildPrompt(state: HandState, prompt: string, params: AgentParams) {
   const seat = state.seats[state.toAct];
   const la = legalActions(state);
   const opponents = state.seats

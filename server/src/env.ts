@@ -6,6 +6,9 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET ?? "dev-insecure-secret-change-me",
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
   ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
+  // xAI / Grok (OpenAI-compatible API). Set XAI_API_KEY to use live Grok decisions.
+  XAI_API_KEY: process.env.XAI_API_KEY ?? "",
+  XAI_MODEL: process.env.XAI_MODEL ?? "grok-4",
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
   // Solana (mainnet)
   SOLANA_RPC_URL: process.env.SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com",
@@ -18,4 +21,5 @@ export const env = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
 };
 
+export const USE_GROK = env.XAI_API_KEY.length > 0;
 export const USE_CLAUDE = env.ANTHROPIC_API_KEY.length > 0;

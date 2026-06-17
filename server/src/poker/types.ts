@@ -10,7 +10,7 @@ export interface PlayerAction {
   type: ActionType;
   amount: number; // chips put in for this action (additional to current bet)
   reasoning?: string;
-  engine?: "claude" | "simulated";
+  engine?: "claude" | "grok" | "simulated";
 }
 
 export interface SeatState {
