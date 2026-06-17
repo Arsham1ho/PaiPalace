@@ -5,15 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { Card, Spinner } from "../components/ui";
 import { Cpu } from "../components/icons";
 import { POKER_AVATARS, ROBOT_AVATARS, randomPokerAvatar } from "../lib/avatars";
-
-interface Params { aggression: number; bluffFreq: number; tightness: number; riskTolerance: number; betSizing: number; contBet: number; callingTendency: number; trapping: number }
-const DEFAULT_PARAMS: Params = { aggression: 0.5, bluffFreq: 0.15, tightness: 0.5, riskTolerance: 0.5, betSizing: 0.5, contBet: 0.5, callingTendency: 0.4, trapping: 0.2 };
-const PARAM_DEFS: { key: keyof Params; label: string }[] = [
-  { key: "aggression", label: "Aggression" }, { key: "tightness", label: "Tightness" },
-  { key: "bluffFreq", label: "Bluff frequency" }, { key: "betSizing", label: "Bet sizing" },
-  { key: "contBet", label: "Continuation betting" }, { key: "callingTendency", label: "Calling tendency" },
-  { key: "trapping", label: "Trapping / slow-play" }, { key: "riskTolerance", label: "Risk tolerance" },
-];
+import { type AgentParams as Params, PARAM_SPECS as PARAM_DEFS, DEFAULT_PARAMS } from "../lib/agentParams";
 
 function fileToAvatar(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

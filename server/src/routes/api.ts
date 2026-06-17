@@ -111,20 +111,19 @@ export function apiRouter(io: Server) {
     }));
   });
 
+  const unit = () => z.number().min(0).max(1).optional();
+  // tunable strategy parameters (basic + professional) — accepted on create/update
+  const agentParamsSchema = z.object({
+    aggression: unit(), bluffFreq: unit(), tightness: unit(), riskTolerance: unit(),
+    betSizing: unit(), contBet: unit(), callingTendency: unit(), trapping: unit(),
+    threeBetFreq: unit(), positionAwareness: unit(), potControl: unit(), foldDiscipline: unit(), valueBetting: unit(),
+  });
+
   const createAgentSchema = z.object({
     name: z.string().min(2).max(40),
     prompt: z.string().min(10).max(2000),
     avatar: z.string().max(400_000).optional(),
-    params: z.object({
-      aggression: z.number().min(0).max(1).optional(),
-      bluffFreq: z.number().min(0).max(1).optional(),
-      tightness: z.number().min(0).max(1).optional(),
-      riskTolerance: z.number().min(0).max(1).optional(),
-      betSizing: z.number().min(0).max(1).optional(),
-      contBet: z.number().min(0).max(1).optional(),
-      callingTendency: z.number().min(0).max(1).optional(),
-      trapping: z.number().min(0).max(1).optional(),
-    }).optional(),
+    params: agentParamsSchema.optional(),
     forSale: z.boolean().optional(),
     priceUsd: z.number().min(0).optional(),
   });
@@ -157,16 +156,7 @@ export function apiRouter(io: Server) {
     name: z.string().min(2).max(40).optional(),
     prompt: z.string().min(10).max(2000).optional(),
     avatar: z.string().max(400_000).optional(),
-    params: z.object({
-      aggression: z.number().min(0).max(1).optional(),
-      bluffFreq: z.number().min(0).max(1).optional(),
-      tightness: z.number().min(0).max(1).optional(),
-      riskTolerance: z.number().min(0).max(1).optional(),
-      betSizing: z.number().min(0).max(1).optional(),
-      contBet: z.number().min(0).max(1).optional(),
-      callingTendency: z.number().min(0).max(1).optional(),
-      trapping: z.number().min(0).max(1).optional(),
-    }).optional(),
+    params: agentParamsSchema.optional(),
     forSale: z.boolean().optional(),
     priceUsd: z.number().min(0).optional(),
   });
