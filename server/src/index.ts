@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
-import { env, USE_CLAUDE } from "./env.js";
+import { env, USE_CLAUDE, USE_GROK } from "./env.js";
 import { authRouter } from "./auth.js";
 import { apiRouter } from "./routes/api.js";
 import { liveGames } from "./game/manager.js";
@@ -15,8 +15,11 @@ app.use(express.json({ limit: "1mb" }));
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: env.CLIENT_ORIGIN } });
 
+const aiEngine = USE_GROK ? "grok" : USE_CLAUDE ? "claude" : "simulated";
+const aiModel = USE_GROK ? env.XAI_MODEL : USE_CLAUDE ? env.ANTHROPIC_MODEL : "";
+
 app.get("/health", (_req, res) =>
-  res.json({ ok: true, aiEngine: USE_CLAUDE ? "claude" : "simulated", model: env.ANTHROPIC_MODEL }),
+  res.json({ ok: true, aiEngine, model: aiModel }),
 );
 
 app.use("/auth", authRouter);
@@ -33,5 +36,5 @@ io.on("connection", (socket) => {
 
 httpServer.listen(env.PORT, () => {
   console.log(`\n  🎰 PaiPalace API on http://localhost:${env.PORT}`);
-  console.log(`  AI engine: ${USE_CLAUDE ? `Claude (${env.ANTHROPIC_MODEL})` : "simulated strategy engine"}\n`);
+  console.log(`  AI engine: ${aiEngine === "grok" ? `Grok (${env.XAI_MODEL})` : aiEngine === "claude" ? `Claude (${env.ANTHROPIC_MODEL})` : "simulated strategy engine"}\n`);
 });
