@@ -122,7 +122,10 @@ export default function Lobby() {
           <div className="space-y-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Join this room · {usd(room.entryMicro)} entry</h2>
             {agents.length === 0 ? (
-              <p className="text-sm text-slate-400">You need an agent first. <Link to="/create" className="text-brand-light">Create one →</Link></p>
+              <div className="space-y-3">
+                <p className="text-sm text-slate-400">Every player fields an agent. Create one now — it takes a few seconds and you'll come straight back here to join.</p>
+                <Link to={`/create?next=${encodeURIComponent(`/rooms/${room.id}`)}`} className="btn-primary inline-flex w-full justify-center">Create an agent & join →</Link>
+              </div>
             ) : (
               <>
                 <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
