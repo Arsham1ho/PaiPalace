@@ -15,7 +15,13 @@ const DECISION_SCHEMA = {
       type: "integer",
       description: "If action is 'raise', the total chip amount to raise the bet TO. 0 otherwise.",
     },
-    reasoning: { type: "string", description: "One or two sentences of poker reasoning." },
+    reasoning: {
+      type: "string",
+      description:
+        "Your read in 3-5 sentences of natural, first-person poker reasoning, like thinking out loud: " +
+        "(1) what you have and the board texture, (2) what you put your opponents on, " +
+        "(3) the pot odds / price if facing a bet, and (4) why this action is best. Be concrete and reference the actual cards and numbers.",
+    },
   },
   required: ["action", "raiseToAmount", "reasoning"],
   additionalProperties: false,
@@ -56,7 +62,8 @@ ${la.canCall ? `- call (costs ${la.callAmount})` : ""}
 ${la.canRaise ? `- raise (raise TO between ${la.minRaiseTo} and ${la.maxRaiseTo})` : ""}
 - allin (commit your entire stack: total ${la.maxRaiseTo})
 
-Decide your single best action now. If raising, set raiseToAmount to the total bet you want to raise TO (between ${la.minRaiseTo} and ${la.maxRaiseTo}).`;
+Decide your single best action now. If raising, set raiseToAmount to the total bet you want to raise TO (between ${la.minRaiseTo} and ${la.maxRaiseTo}).
+In "reasoning", think out loud in the first person (3-5 sentences): your hand and the board, what you put opponents on, the pot odds if facing a bet, and why this line is best — referencing the actual cards and chip amounts.`;
 }
 
 export async function claudeDecision(
