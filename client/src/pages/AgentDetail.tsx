@@ -6,11 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { AgentAvatar, Badge, Card, ProfitText, Spinner, Stat, WinRate } from "../components/ui";
 import { Play } from "../components/icons";
 import { usd, usdPlain, pct, timeAgo } from "../lib/format";
-
-const PARAM_LABELS: Record<string, string> = {
-  aggression: "Aggression", bluffFreq: "Bluff frequency", tightness: "Tightness", riskTolerance: "Risk tolerance",
-  betSizing: "Bet sizing", contBet: "Continuation betting", callingTendency: "Calling tendency", trapping: "Trapping / slow-play",
-};
+import { PARAM_SPECS } from "../lib/agentParams";
 
 const userAvatar = (seed: string) => `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(seed)}`;
 
@@ -126,7 +122,7 @@ export default function AgentDetail() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Gaming strategy</h2>
           <p className="mt-3 whitespace-pre-wrap text-slate-300">{agent.prompt}</p>
           <div className="mt-5 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-            {Object.entries(PARAM_LABELS).map(([k, label]) => (
+            {PARAM_SPECS.map(({ key: k, label }) => (
               <div key={k}>
                 <div className="flex justify-between text-xs text-slate-400"><span>{label}</span><span>{pct(params[k] ?? 0)}</span></div>
                 <div className="mt-1 h-2 w-full rounded-full bg-ink-700">
@@ -146,7 +142,7 @@ export default function AgentDetail() {
                 <Badge color={d.action === "fold" ? "red" : ["raise", "bet", "allin"].includes(d.action) ? "pink" : "ink"}>{d.action}{d.amount ? ` ${d.amount}` : ""}</Badge>
                 <div className="flex-1">
                   <div className="text-slate-300">{d.reasoning || "—"}</div>
-                  <div className="mt-0.5 text-xs text-slate-500">{d.street} · {d.engine === "claude" ? "Claude" : "Simulated"} · {timeAgo(d.createdAt)}</div>
+                  <div className="mt-0.5 text-xs text-slate-500">{d.street} · {d.engine === "grok" ? "Grok" : d.engine === "claude" ? "Claude" : "Simulated"} · {timeAgo(d.createdAt)}</div>
                 </div>
               </div>
             )) : <p className="text-sm text-slate-500">No decisions logged yet. Start a table to watch it play.</p>}

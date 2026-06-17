@@ -11,6 +11,12 @@ export interface AgentParams {
   contBet?: number;        // 0..1 — continuation-bet frequency postflop
   callingTendency?: number; // 0..1 — sticky/calling-station vs fold-happy
   trapping?: number;       // 0..1 — slow-play strong hands to disguise them
+  // professional tuning
+  threeBetFreq?: number;      // 0..1 — preflop re-raise frequency
+  positionAwareness?: number; // 0..1 — play wider in late position, tighter OOP
+  potControl?: number;        // 0..1 — keep pots small with medium made hands
+  foldDiscipline?: number;    // 0..1 — fold correctly to big bets
+  valueBetting?: number;      // 0..1 — bet good-but-not-great hands for thin value
 }
 
 const RANK_VAL: Record<Rank, number> = {
@@ -89,10 +95,22 @@ export function simulatedDecision(
   const contBet = params.contBet ?? 0.5;
   const callingTendency = params.callingTendency ?? 0.4;
   const trapping = params.trapping ?? 0.2;
+  // professional tuning
+  const threeBetFreq = params.threeBetFreq ?? 0.25;
+  const positionAwareness = params.positionAwareness ?? 0.5;
+  const potControl = params.potControl ?? 0.45;
+  const foldDiscipline = params.foldDiscipline ?? 0.55;
+  const valueBetting = params.valueBetting ?? 0.5;
+
+  // position: 0 = first to act (out of position), 1 = on the button (in position)
+  const nSeats = state.seats.length;
+  const lateness = nSeats > 1 ? ((state.toAct - state.dealer - 1 + nSeats) % nSeats) / (nSeats - 1) : 0.5;
+  const posAdj = (lateness - 0.5) * positionAwareness; // <0 early, >0 late
 
   const potOdds = la.callAmount / Math.max(1, state.pot + la.callAmount);
-  // tighter players + low calling tendency need a stronger hand to continue
-  const continueThreshold = 0.22 + tightness * 0.35 - callingTendency * 0.18;
+  // tighter players + low calling tendency need a stronger hand to continue;
+  // late position loosens the requirement, early position tightens it.
+  const continueThreshold = Math.max(0.05, 0.22 + tightness * 0.35 - callingTendency * 0.18 - posAdj * 0.16);
   const bluffing = Math.random() < bluffFreq && postflop;
   const veryStrong = strength > continueThreshold + 0.3;
 
@@ -120,7 +138,12 @@ export function simulatedDecision(
       return { type: "check", amount: 0, engine: "simulated", reasoning: reason("I'll slow-play it — checking to induce a bet and trap rather than scare them off.") };
     }
     let betProb = aggression * (postflop ? 0.6 + contBet * 0.6 : 1);
-    const worthBetting = strength > continueThreshold + 0.12 || bluffing;
+    // value betting widens the betting range (thinner value); pot control reins it
+    // in with medium-strength made hands to keep the pot small.
+    const valueThreshold = continueThreshold + 0.12 - valueBetting * 0.1;
+    const mediumMade = postflop && strength > continueThreshold && !veryStrong;
+    if (mediumMade) betProb *= 1 - potControl * 0.5;
+    const worthBetting = strength > valueThreshold || bluffing;
     if (worthBetting && Math.random() < betProb) {
       return { type: "bet", amount: sizedRaise(state.pot || state.bigBlind), engine: "simulated",
         reasoning: reason(bluffing ? "No real equity, but I'll fire a bluff to apply pressure and fold out better hands."
@@ -131,8 +154,10 @@ export function simulatedDecision(
 
   // ── facing a bet ──
   const effStrength = bluffing ? Math.max(strength, 0.55) : strength;
-  // calling stations call wider; nits fold more to the price
-  const callFloor = Math.max(continueThreshold, potOdds * (1.0 - callingTendency * 0.4));
+  // calling stations call wider; nits fold more to the price. Fold discipline
+  // raises the bar further against large bets relative to the pot.
+  const pressure = Math.min(1, la.callAmount / Math.max(1, state.pot)); // bet size vs pot
+  const callFloor = Math.max(continueThreshold, potOdds * (1.0 - callingTendency * 0.4)) + pressure * foldDiscipline * 0.18;
   if (effStrength < callFloor && !bluffing) {
     return { type: "fold", amount: 0, engine: "simulated", reasoning: reason("That's too rich for this holding — I don't have the equity to continue, so I'm folding.") };
   }
@@ -142,9 +167,12 @@ export function simulatedDecision(
     return { type: "call", amount: la.callAmount, engine: "simulated", reasoning: reason("I'm way ahead — just flat-calling to disguise my strength and keep them betting into me.") };
   }
 
-  if (la.canRaise && (veryStrong || bluffing) && Math.random() < aggression) {
+  // preflop 3-bet: re-raise decent hands at the configured frequency
+  const threeBetting = !postflop && la.canRaise && strength > continueThreshold + 0.1 && Math.random() < threeBetFreq;
+  if (la.canRaise && (veryStrong || bluffing || threeBetting) && Math.random() < Math.max(aggression, threeBetting ? 0.8 : 0)) {
     return { type: "raise", amount: sizedRaise(state.pot + la.callAmount), engine: "simulated",
       reasoning: reason(bluffing ? "Turning my hand into a semi-bluff raise — fold equity now plus outs if called."
+        : threeBetting ? "Strong enough to 3-bet — re-raising preflop to build the pot and seize the initiative."
         : "I'm ahead of their range, so I'll raise for value and get more chips in while I'm winning.") };
   }
 

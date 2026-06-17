@@ -4,30 +4,15 @@ import { api } from "../lib/api";
 import { Card } from "../components/ui";
 import { Cpu } from "../components/icons";
 import { POKER_AVATARS, ROBOT_AVATARS, randomPokerAvatar } from "../lib/avatars";
-
-interface Params {
-  aggression: number; bluffFreq: number; tightness: number; riskTolerance: number;
-  betSizing: number; contBet: number; callingTendency: number; trapping: number;
-}
-
-const PARAMS: { key: keyof Params; label: string; hint: string }[] = [
-  { key: "aggression", label: "Aggression", hint: "How often it bets/raises versus calls." },
-  { key: "tightness", label: "Tightness", hint: "How strong a hand it needs to enter and continue." },
-  { key: "bluffFreq", label: "Bluff frequency", hint: "Chance to bluff with weak holdings." },
-  { key: "betSizing", label: "Bet sizing", hint: "Small, controlled bets vs large, pot-sized pressure." },
-  { key: "contBet", label: "Continuation betting", hint: "How often it fires a bet after taking the lead postflop." },
-  { key: "callingTendency", label: "Calling tendency", hint: "Sticky calling station vs fold-happy nit." },
-  { key: "trapping", label: "Trapping / slow-play", hint: "Disguises monsters by checking/flat-calling." },
-  { key: "riskTolerance", label: "Risk tolerance", hint: "Willingness to commit a big stack." },
-];
+import { type AgentParams as Params, PARAM_SPECS as PARAMS } from "../lib/agentParams";
 
 const PRESETS: { name: string; desc: string; prompt: string; params: Params }[] = [
-  { name: "Tight-Aggressive", desc: "Solid, disciplined value", prompt: "You are a disciplined tight-aggressive (TAG) player. Enter pots with strong ranges, bet and raise for value, c-bet relentlessly, and bluff only when the story is credible. Fold marginal spots and avoid coin flips without an edge.", params: { aggression: 0.65, bluffFreq: 0.15, tightness: 0.7, riskTolerance: 0.5, betSizing: 0.55, contBet: 0.7, callingTendency: 0.25, trapping: 0.2 } },
-  { name: "Loose-Aggressive", desc: "High-pressure LAG", prompt: "You are a loose-aggressive (LAG) player. Play a wide range, apply constant pressure with bets and 3-bets, barrel multiple streets, and bluff often. Force opponents into tough decisions and accept high variance.", params: { aggression: 0.85, bluffFreq: 0.4, tightness: 0.25, riskTolerance: 0.8, betSizing: 0.7, contBet: 0.78, callingTendency: 0.3, trapping: 0.15 } },
-  { name: "GTO Balanced", desc: "Unexploitable mix", prompt: "You are a GTO-leaning solver. Make balanced decisions from pot odds, equity and ranges. Mix value and bluffs at the right frequencies to stay unexploitable, size bets by board texture, and avoid emotional plays.", params: { aggression: 0.6, bluffFreq: 0.22, tightness: 0.5, riskTolerance: 0.55, betSizing: 0.6, contBet: 0.65, callingTendency: 0.35, trapping: 0.25 } },
-  { name: "The Nit", desc: "Ultra-tight rock", prompt: "You are an ultra-tight rock. Only play premium hands, almost never bluff, and fold to aggression without a strong holding. Patience is your edge — let opponents pay you off.", params: { aggression: 0.3, bluffFreq: 0.03, tightness: 0.9, riskTolerance: 0.3, betSizing: 0.45, contBet: 0.45, callingTendency: 0.15, trapping: 0.35 } },
-  { name: "Maniac", desc: "Max aggression, high variance", prompt: "You are a maniac. Raise and re-raise relentlessly with a huge range, bluff constantly, and gamble for stacks. Maximum pressure, maximum variance — you live for the action.", params: { aggression: 0.95, bluffFreq: 0.55, tightness: 0.1, riskTolerance: 0.95, betSizing: 0.9, contBet: 0.85, callingTendency: 0.4, trapping: 0.05 } },
-  { name: "Calling Station", desc: "Sticky, hard to bluff", prompt: "You are a calling station. Rarely fold once involved, call down with marginal hands, and let opponents bluff into you. Seldom raise — your edge is catching bluffs.", params: { aggression: 0.3, bluffFreq: 0.05, tightness: 0.3, riskTolerance: 0.5, betSizing: 0.45, contBet: 0.4, callingTendency: 0.85, trapping: 0.3 } },
+  { name: "Tight-Aggressive", desc: "Solid, disciplined value", prompt: "You are a disciplined tight-aggressive (TAG) player. Enter pots with strong ranges, bet and raise for value, c-bet relentlessly, and bluff only when the story is credible. Fold marginal spots and avoid coin flips without an edge.", params: { aggression: 0.65, bluffFreq: 0.15, tightness: 0.7, riskTolerance: 0.5, betSizing: 0.55, contBet: 0.7, callingTendency: 0.25, trapping: 0.2, threeBetFreq: 0.3, positionAwareness: 0.7, potControl: 0.5, foldDiscipline: 0.7, valueBetting: 0.6 } },
+  { name: "Loose-Aggressive", desc: "High-pressure LAG", prompt: "You are a loose-aggressive (LAG) player. Play a wide range, apply constant pressure with bets and 3-bets, barrel multiple streets, and bluff often. Force opponents into tough decisions and accept high variance.", params: { aggression: 0.85, bluffFreq: 0.4, tightness: 0.25, riskTolerance: 0.8, betSizing: 0.7, contBet: 0.78, callingTendency: 0.3, trapping: 0.15, threeBetFreq: 0.55, positionAwareness: 0.75, potControl: 0.3, foldDiscipline: 0.35, valueBetting: 0.6 } },
+  { name: "GTO Balanced", desc: "Unexploitable mix", prompt: "You are a GTO-leaning solver. Make balanced decisions from pot odds, equity and ranges. Mix value and bluffs at the right frequencies to stay unexploitable, size bets by board texture, and avoid emotional plays.", params: { aggression: 0.6, bluffFreq: 0.22, tightness: 0.5, riskTolerance: 0.55, betSizing: 0.6, contBet: 0.65, callingTendency: 0.35, trapping: 0.25, threeBetFreq: 0.4, positionAwareness: 0.8, potControl: 0.55, foldDiscipline: 0.6, valueBetting: 0.65 } },
+  { name: "The Nit", desc: "Ultra-tight rock", prompt: "You are an ultra-tight rock. Only play premium hands, almost never bluff, and fold to aggression without a strong holding. Patience is your edge — let opponents pay you off.", params: { aggression: 0.3, bluffFreq: 0.03, tightness: 0.9, riskTolerance: 0.3, betSizing: 0.45, contBet: 0.45, callingTendency: 0.15, trapping: 0.35, threeBetFreq: 0.1, positionAwareness: 0.5, potControl: 0.6, foldDiscipline: 0.85, valueBetting: 0.4 } },
+  { name: "Maniac", desc: "Max aggression, high variance", prompt: "You are a maniac. Raise and re-raise relentlessly with a huge range, bluff constantly, and gamble for stacks. Maximum pressure, maximum variance — you live for the action.", params: { aggression: 0.95, bluffFreq: 0.55, tightness: 0.1, riskTolerance: 0.95, betSizing: 0.9, contBet: 0.85, callingTendency: 0.4, trapping: 0.05, threeBetFreq: 0.7, positionAwareness: 0.6, potControl: 0.1, foldDiscipline: 0.15, valueBetting: 0.5 } },
+  { name: "Calling Station", desc: "Sticky, hard to bluff", prompt: "You are a calling station. Rarely fold once involved, call down with marginal hands, and let opponents bluff into you. Seldom raise — your edge is catching bluffs.", params: { aggression: 0.3, bluffFreq: 0.05, tightness: 0.3, riskTolerance: 0.5, betSizing: 0.45, contBet: 0.4, callingTendency: 0.85, trapping: 0.3, threeBetFreq: 0.08, positionAwareness: 0.35, potControl: 0.5, foldDiscipline: 0.2, valueBetting: 0.35 } },
 ];
 
 function Slider({ label, value, onChange, hint }: { label: string; value: number; onChange: (v: number) => void; hint: string }) {
@@ -82,6 +67,7 @@ export default function CreateAgent() {
   const [p, setP] = useState<Params>(PRESETS[0].params);
   const [forSale, setForSale] = useState(false);
   const [priceUsd, setPriceUsd] = useState(100);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -228,15 +214,29 @@ export default function CreateAgent() {
           <p className="mt-1 text-xs text-slate-500">{prompt.length} / 2000 characters · "Improve with AI" rewrites it into a sharper strategy.</p>
         </Card>
 
-        {/* parameters */}
-        <Card>
-          <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Parameters</h2>
-          <div className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">
-            {PARAMS.map((param) => (
-              <Slider key={param.key} label={param.label} hint={param.hint} value={p[param.key]} onChange={(v) => setParam(param.key, v)} />
-            ))}
-          </div>
-        </Card>
+        {/* advanced options — fine-tuning parameters, hidden by default */}
+        <div>
+          <button type="button" onClick={() => setShowAdvanced((v) => !v)}
+            className="flex w-full items-center justify-between rounded-xl border border-ink-700 bg-ink-850 px-4 py-3 text-left transition hover:border-ink-600">
+            <span>
+              <span className="text-sm font-semibold text-slate-200">Advanced options</span>
+              <span className="ml-2 text-xs text-slate-500">Fine-tune the strategy parameters</span>
+            </span>
+            <span className="text-sm text-slate-400">{showAdvanced ? "▲" : "▼"}</span>
+          </button>
+
+          {showAdvanced && (
+            <Card className="mt-2">
+              <h2 className="text-xs font-bold uppercase tracking-wide text-slate-400">Parameters</h2>
+              <p className="mt-1 text-xs text-slate-500">Your playstyle preset sets these automatically — adjust only if you want to fine-tune behavior.</p>
+              <div className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                {PARAMS.map((param) => (
+                  <Slider key={param.key} label={param.label} hint={param.hint} value={p[param.key]} onChange={(v) => setParam(param.key, v)} />
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
 
         {/* marketplace */}
         <Card>
