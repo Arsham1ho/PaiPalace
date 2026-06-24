@@ -12,6 +12,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
   const [password, setPassword] = useState("");
   const [entryUsd, setEntryUsd] = useState(5);
   const [bigBlind, setBigBlind] = useState(10);
+  const [human, setHuman] = useState(true); // play manually vs let the AI agent play
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -33,7 +34,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
     if (!agentId) { setMsg("Pick one of your agents to field."); return; }
     setBusy(true); setMsg("");
     try {
-      const { id } = await api.createRoom({ name: name.trim() || undefined, visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind });
+      const { id } = await api.createRoom({ name: name.trim() || undefined, visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind, human });
       onClose(); nav(`/rooms/${id}`);
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };
@@ -66,9 +67,19 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
               ))}
             </div>
 
+            {/* who plays this seat */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">Who plays your seat?</label>
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
+                <button onClick={() => setHuman(true)} className={`rounded-lg py-2 text-sm font-medium transition ${human ? "bg-ink-700 text-white" : "text-slate-400"}`}>I'll play</button>
+                <button onClick={() => setHuman(false)} className={`rounded-lg py-2 text-sm font-medium transition ${!human ? "bg-ink-700 text-white" : "text-slate-400"}`}>My AI agent</button>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">{human ? "You make every decision at the table. Your agent is just your identity/avatar." : "Your AI agent plays automatically on your behalf."}</p>
+            </div>
+
             {/* agent */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-400">Your agent</label>
+              <label className="mb-1 block text-xs font-medium text-slate-400">{human ? "Your table identity" : "Your agent"}</label>
               <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto">
                 {agents?.map((a) => (
                   <button key={a.id} onClick={() => setAgentId(a.id)}

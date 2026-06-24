@@ -8,14 +8,16 @@ import {
   handOver,
   settle,
   liveSeats,
+  legalActions,
   type SeatSeed,
 } from "../poker/engine.js";
-import type { HandState } from "../poker/types.js";
+import type { HandState, PlayerAction } from "../poker/types.js";
 import { decideAction, type AgentParams } from "../agents/index.js";
 
 const CHIP_VALUE_MICRO = 10_000n; // 1 chip = $0.01
 const MAX_HANDS = 25;
 const ACTION_DELAY_MS = 700;
+const HUMAN_TURN_MS = 30_000; // a human has 30s to act before auto-check/fold
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -25,6 +27,91 @@ interface AgentMeta {
   prompt: string;
   params: AgentParams;
   userId?: string | null;
+  isHuman?: boolean;
+}
+
+// Seats awaiting a human decision: key `${gameId}:${seatIndex}` → resolver.
+interface Pending { gameId: string; seatIndex: number; userId: string; resolve: (a: PlayerAction) => void; }
+const pendingActions = new Map<string, Pending>();
+
+/**
+ * Submit a human's action for the seat that is currently on the clock.
+ * Validates the action against the live legal actions and resolves the
+ * loop's awaiting promise. Returns an error string if it's not accepted.
+ */
+export function submitHumanAction(
+  gameId: string,
+  userId: string,
+  type: PlayerAction["type"],
+  amount?: number,
+): { ok: true } | { ok: false; error: string } {
+  const entry = [...pendingActions.values()].find((p) => p.gameId === gameId && p.userId === userId);
+  if (!entry) return { ok: false, error: "It's not your turn." };
+  const live = liveGames.get(gameId);
+  if (!live) return { ok: false, error: "Game is not live." };
+  const la = legalActions(live.state);
+  let action: PlayerAction;
+  switch (type) {
+    case "fold":
+      action = { type: "fold", amount: 0 };
+      break;
+    case "check":
+      if (!la.canCheck) return { ok: false, error: "You can't check facing a bet." };
+      action = { type: "check", amount: 0 };
+      break;
+    case "call":
+      if (!la.canCall) return { ok: false, error: "Nothing to call." };
+      action = { type: "call", amount: la.callAmount };
+      break;
+    case "bet":
+    case "raise":
+    case "allin": {
+      if (!la.canRaise) return { ok: false, error: "You can't raise here." };
+      const target = type === "allin" ? la.maxRaiseTo : Math.round(Number(amount) || 0);
+      const clamped = Math.max(la.minRaiseTo, Math.min(target, la.maxRaiseTo));
+      action = { type, amount: clamped };
+      break;
+    }
+    default:
+      return { ok: false, error: "Unknown action." };
+  }
+  action.engine = "human";
+  pendingActions.delete(`${gameId}:${entry.seatIndex}`);
+  entry.resolve(action);
+  return { ok: true };
+}
+
+/** Emit the on-the-clock prompt and await the human's action (or time out). */
+function awaitHumanAction(
+  io: Server,
+  gameId: string,
+  state: HandState,
+  seatIndex: number,
+  userId: string,
+): Promise<PlayerAction> {
+  const la = legalActions(state);
+  const deadline = Date.now() + HUMAN_TURN_MS;
+  const payload = jsonSafe({ gameId, seatIndex, userId, legal: la, deadline });
+  io.to(room(gameId)).emit("game:your_turn", payload);
+  return new Promise((resolve) => {
+    const key = `${gameId}:${seatIndex}`;
+    // re-broadcast so a late-joining / reconnecting client still gets prompted
+    const reEmit = setInterval(() => io.to(room(gameId)).emit("game:your_turn", payload), 4000);
+    const done = (a: PlayerAction) => {
+      clearTimeout(timer);
+      clearInterval(reEmit);
+      pendingActions.delete(key);
+      io.to(room(gameId)).emit("game:turn_over", { gameId, seatIndex });
+      resolve(a);
+    };
+    const timer = setTimeout(() => {
+      const fallback: PlayerAction = la.canCheck
+        ? { type: "check", amount: 0, engine: "human", reasoning: "Timed out — auto-check." }
+        : { type: "fold", amount: 0, engine: "human", reasoning: "Timed out — auto-fold." };
+      done(fallback);
+    }, HUMAN_TURN_MS);
+    pendingActions.set(key, { gameId, seatIndex, userId, resolve: done });
+  });
 }
 
 // In-memory snapshot registry so spectators can join a game in progress.
@@ -35,7 +122,7 @@ export interface CreateGameInput {
   buyInChips: number;
   smallBlind: number;
   bigBlind: number;
-  agents: { agentId: string; userId?: string | null }[];
+  agents: { agentId: string; userId?: string | null; isHuman?: boolean }[];
   practice?: boolean;
 }
 
@@ -57,6 +144,7 @@ export async function createGame(input: CreateGameInput) {
         gameId: game.id,
         agentId: a.agentId,
         userId: a.userId ?? null,
+        isHuman: a.isHuman ?? false,
         seatIndex: i,
         stack: BigInt(input.buyInChips),
         startStack: BigInt(input.buyInChips),
@@ -88,6 +176,7 @@ export async function runGame(io: Server, gameId: string, opts?: { delayMs?: num
     prompt: s.agent.prompt,
     params: safeParams(s.agent.params),
     userId: s.userId,
+    isHuman: s.isHuman,
   }));
   const metaBySeat = new Map<number, AgentMeta>();
   game.seats.forEach((s, i) => metaBySeat.set(i, metas[i]));
@@ -138,8 +227,10 @@ export async function runGame(io: Server, gameId: string, opts?: { delayMs?: num
         : null;
       if (!meta) break;
 
-      const action = await decideAction(state, meta.prompt, meta.params);
       const actorSeat = state.seats[state.toAct];
+      const action = meta.isHuman && meta.userId
+        ? await awaitHumanAction(io, gameId, state, actorSeat.seatIndex, meta.userId)
+        : await decideAction(state, meta.prompt, meta.params);
       applyAction(state, action);
 
       await prisma.decision.create({

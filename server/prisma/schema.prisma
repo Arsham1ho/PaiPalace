@@ -117,6 +117,8 @@ model Seat {
   // The user who fielded this agent in the game (null for house agents)
   userId    String?
   user      User?   @relation(fields: [userId], references: [id])
+  // When true, the fielding user makes decisions manually (instead of the agent).
+  isHuman   Boolean @default(false)
   seatIndex Int
   stack     BigInt
   startStack BigInt

@@ -91,6 +91,7 @@ CREATE TABLE "Seat" (
     "gameId" TEXT NOT NULL,
     "agentId" TEXT NOT NULL,
     "userId" TEXT,
+    "isHuman" BOOLEAN NOT NULL DEFAULT false,
     "seatIndex" INTEGER NOT NULL,
     "stack" BIGINT NOT NULL,
     "startStack" BIGINT NOT NULL,
