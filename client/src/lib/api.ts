@@ -69,6 +69,8 @@ export const api = {
   game: (id: string) => request<GameDetail>(`/api/games/${id}`),
   createGame: (body: any) => request<Game>("/api/games", { method: "POST", body: JSON.stringify(body) }),
   testMatch: (agentId: string) => request<Game>("/api/games/test", { method: "POST", body: JSON.stringify({ agentId }) }),
+  // free instant "you vs AI" practice match — the Play-now entry point
+  playVsAi: () => request<Game>("/api/games/play", { method: "POST" }),
   // rooms (multiplayer)
   rooms: () => request<RoomSummary[]>("/api/rooms"),
   room: (id: string) => request<RoomDetail>(`/api/rooms/${id}`),
@@ -77,6 +79,9 @@ export const api = {
   joinRoom: (id: string, body: any) => request(`/api/rooms/${id}/join`, { method: "POST", body: JSON.stringify(body) }),
   startRoom: (id: string) => request(`/api/rooms/${id}/start`, { method: "POST" }),
   addRoomBot: (id: string) => request(`/api/rooms/${id}/add-bot`, { method: "POST" }),
+  // submit a human player's action when it's their turn
+  actInGame: (id: string, action: { type: string; amount?: number }) =>
+    request(`/api/games/${id}/act`, { method: "POST", body: JSON.stringify(action) }),
   // users
   users: () => request<PublicUser[]>("/api/users"),
   user: (id: string) => request<PublicUserDetail>(`/api/users/${id}`),

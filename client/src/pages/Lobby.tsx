@@ -16,6 +16,7 @@ export default function Lobby() {
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [human, setHuman] = useState(true); // play manually vs let the AI agent play
 
   const load = () => api.room(id!).then((r) => {
     setRoom(r);
@@ -54,7 +55,7 @@ export default function Lobby() {
   const join = async () => {
     if (!agentId) { setMsg("Pick an agent to field."); return; }
     setBusy(true); setMsg("");
-    try { await api.joinRoom(room.id, { agentId, password: password || undefined }); await load(); }
+    try { await api.joinRoom(room.id, { agentId, password: password || undefined, human }); await load(); }
     catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };
   const start = async () => {
@@ -135,6 +136,11 @@ export default function Lobby() {
                     </button>
                   ))}
                 </div>
+                <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
+                  <button onClick={() => setHuman(true)} className={`rounded-lg py-2 text-sm font-medium transition ${human ? "bg-ink-700 text-white" : "text-slate-400"}`}>I'll play</button>
+                  <button onClick={() => setHuman(false)} className={`rounded-lg py-2 text-sm font-medium transition ${!human ? "bg-ink-700 text-white" : "text-slate-400"}`}>My AI agent</button>
+                </div>
+                <p className="text-center text-[11px] text-slate-500">{human ? "You make every decision at the table." : "Your AI agent plays for you automatically."}</p>
                 {room.needsPassword && <input type="text" className="input" placeholder="Room password" value={password} onChange={(e) => setPassword(e.target.value)} />}
                 <button className="btn-primary w-full" disabled={busy} onClick={join}>Join · stake {usd(room.entryMicro)}</button>
               </>

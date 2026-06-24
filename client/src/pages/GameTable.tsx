@@ -71,7 +71,7 @@ const STREETS = ["preflop", "flop", "turn", "river"];
 // expands on click so the feed stays compact.
 function FeedCard({ f, highlight }: { f: FeedItem; highlight: boolean }) {
   const [open, setOpen] = useState(false);
-  const engineLabel = f.engine === "grok" ? "🧠 Reasoned by Grok" : f.engine === "claude" ? "🧠 Reasoned by Claude" : "⚙️ Simulated strategy engine";
+  const engineLabel = f.engine === "human" ? "🧑 Human player" : f.engine === "grok" ? "🧠 Reasoned by Grok" : f.engine === "claude" ? "🧠 Reasoned by Claude" : "⚙️ Simulated strategy engine";
   return (
     <div className={`rounded-lg border border-ink-800 bg-ink-850/40 p-3 text-sm ${highlight ? "animate-fade" : ""}`}>
       <div className="flex items-center justify-between gap-2">
@@ -114,6 +114,11 @@ export default function GameTable() {
   const [callout, setCallout] = useState<{ text: string; tone: string; key: number } | null>(null);
   const [allinFlash, setAllinFlash] = useState(0);
   const [displayPot, setDisplayPot] = useState(0);
+  // manual-play (human seat) controls
+  const [myTurn, setMyTurn] = useState<{ legal: any; deadline: number } | null>(null);
+  const [raiseTo, setRaiseTo] = useState(0);
+  const [actMsg, setActMsg] = useState("");
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     api.game(id!).then((g) => {
@@ -142,19 +147,36 @@ export default function GameTable() {
       setCallout({ text: `${p.action}${p.amount ? " " + p.amount : ""}`, tone: p.action, key: Date.now() });
       if (p.action === "allin") setAllinFlash(Date.now());
     };
-    const onShowdown = (p: any) => { setTable(p.state); setWinners(p.result?.winners ?? []); play("win"); };
-    const onFinished = (p: any) => { setStatus("finished"); setSummary(p.summary); };
+    const onShowdown = (p: any) => { setTable(p.state); setWinners(p.result?.winners ?? []); play("win"); setMyTurn(null); };
+    const onFinished = (p: any) => { setStatus("finished"); setSummary(p.summary); setMyTurn(null); };
+    // human manual play: prompt for an action when it's my seat's turn
+    const onYourTurn = (p: any) => {
+      if (p.userId !== user?.id) return;
+      setActMsg("");
+      setRaiseTo(p.legal?.minRaiseTo ?? 0);
+      setMyTurn({ legal: p.legal, deadline: p.deadline });
+    };
+    const onTurnOver = () => setMyTurn(null);
     socket.on("game:snapshot", onSnapshot);
     socket.on("game:hand_start", onHandStart);
     socket.on("game:street", onStreet);
     socket.on("game:action", onAction);
     socket.on("game:showdown", onShowdown);
     socket.on("game:finished", onFinished);
+    socket.on("game:your_turn", onYourTurn);
+    socket.on("game:turn_over", onTurnOver);
     return () => {
       socket.emit("game:leave", id);
-      ["game:snapshot","game:hand_start","game:street","game:action","game:showdown","game:finished"].forEach((e) => socket.off(e));
+      ["game:snapshot","game:hand_start","game:street","game:action","game:showdown","game:finished","game:your_turn","game:turn_over"].forEach((e) => socket.off(e));
     };
-  }, [id]);
+  }, [id, user?.id]);
+
+  // tick a clock while it's my turn so the countdown updates
+  useEffect(() => {
+    if (!myTurn) return;
+    const t = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(t);
+  }, [myTurn]);
 
   // pot count-up animation
   useEffect(() => {
@@ -183,8 +205,41 @@ export default function GameTable() {
   const hasMine = myAgentNames.size > 0;
   const visibleFeed = feedFilter === "mine" ? feed.filter((f) => myAgentNames.has(f.agentName)) : feed;
 
+  const secondsLeft = myTurn ? Math.max(0, Math.ceil((myTurn.deadline - now) / 1000)) : 0;
+  const submitAction = async (type: string, amount?: number) => {
+    setActMsg("");
+    try { await api.actInGame(id!, { type, amount }); setMyTurn(null); }
+    catch (e: any) { setActMsg(e.message); }
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+      {/* manual-play action bar — only when it's my human seat's turn */}
+      {myTurn && status === "running" && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-brand/50 bg-ink-950/95 px-4 py-3 backdrop-blur">
+          <div className="mx-auto flex max-w-3xl flex-col gap-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-bold text-brand-light">Your turn to act</span>
+              <span className={`tabular font-semibold ${secondsLeft <= 5 ? "text-down" : "text-slate-400"}`}>{secondsLeft}s</span>
+            </div>
+            {myTurn.legal?.canRaise && (
+              <div className="flex items-center gap-3">
+                <input type="range" min={myTurn.legal.minRaiseTo} max={myTurn.legal.maxRaiseTo} step={1}
+                  value={raiseTo} onChange={(e) => setRaiseTo(Number(e.target.value))} className="flex-1 accent-brand" />
+                <span className="tabular w-20 text-right text-sm font-semibold">{raiseTo}</span>
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => submitAction("fold")} className="btn-ghost flex-1 !py-2.5">Fold</button>
+              {myTurn.legal?.canCheck && <button onClick={() => submitAction("check")} className="btn-ghost flex-1 !py-2.5">Check</button>}
+              {myTurn.legal?.canCall && <button onClick={() => submitAction("call")} className="btn-ghost flex-1 !py-2.5">Call {myTurn.legal.callAmount}</button>}
+              {myTurn.legal?.canRaise && <button onClick={() => submitAction("raise", raiseTo)} className="btn-primary flex-1 !py-2.5">Raise to {raiseTo}</button>}
+              {myTurn.legal?.canRaise && <button onClick={() => submitAction("allin")} className="btn-ghost flex-1 !py-2.5">All-in {myTurn.legal.maxRaiseTo}</button>}
+            </div>
+            {actMsg && <p className="text-center text-xs text-down">{actMsg}</p>}
+          </div>
+        </div>
+      )}
       <div>
         <div className="mb-3 flex items-center justify-between">
           <div>

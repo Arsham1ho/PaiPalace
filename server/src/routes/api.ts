@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma, jsonSafe, fromUsd } from "../db.js";
 import { authMiddleware, adminMiddleware, type AuthedRequest } from "../auth.js";
-import { createGame, runGame, liveGames, room as roomChannel } from "../game/manager.js";
+import { createGame, runGame, liveGames, submitHumanAction, room as roomChannel } from "../game/manager.js";
 import { improvePrompt } from "../agents/improve.js";
 import {
   isValidSolanaAddress,
@@ -390,6 +390,14 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe({ ...game, live: live ? live.state : null }));
   });
 
+  // A human player submits their action when it's their turn (manual-play seats).
+  r.post("/games/:id/act", authMiddleware, async (req: AuthedRequest, res) => {
+    const { type, amount } = req.body ?? {};
+    const result = submitHumanAction(req.params.id, req.userId!, type, amount === undefined ? undefined : Number(amount));
+    if (!result.ok) return res.status(400).json({ error: result.error });
+    res.json({ ok: true });
+  });
+
   const createGameSchema = z.object({
     name: z.string().min(2).max(50),
     buyInChips: z.number().int().min(100).max(100000).default(1000),
@@ -442,6 +450,25 @@ export function apiRouter(io: Server) {
     res.json(jsonSafe(game));
   });
 
+  // Free instant practice match: YOU play your seat manually vs house AI.
+  // No fee, no real P&L — the "Play now" entry point.
+  r.post("/games/play", authMiddleware, async (req: AuthedRequest, res) => {
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    if (!user) return res.status(401).json({ error: "Not signed in" });
+    const houses = await prisma.agent.findMany({ where: { ownerId: null }, take: 4 });
+    if (houses.length < 2) return res.status(400).json({ error: "No house agents available right now." });
+    // identity skin: the user's own agent if they have one, otherwise a house agent
+    const mine = (await prisma.agent.findFirst({ where: { ownerId: user.id } })) ?? houses[0];
+    const opponents = houses.filter((h) => h.id !== mine.id).slice(0, 2);
+    const game = await createGame({
+      name: `${user.username} vs AI`,
+      buyInChips: 1000, smallBlind: 5, bigBlind: 10, practice: true,
+      agents: [{ agentId: mine.id, userId: user.id, isHuman: true }, ...opponents.map((h) => ({ agentId: h.id, userId: null }))],
+    });
+    runGame(io, game.id).catch((e) => console.error("[play] run failed", e));
+    res.json(jsonSafe(game));
+  });
+
   // ---- MULTIPLAYER ROOMS ----
   const ROOM_BUYIN = 1000;
   const genCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -453,7 +480,7 @@ export function apiRouter(io: Server) {
   });
 
   r.post("/rooms", authMiddleware, async (req: AuthedRequest, res) => {
-    const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10, name } = req.body ?? {};
+    const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10, name, human = false } = req.body ?? {};
     if (!["public", "private"].includes(visibility)) return res.status(400).json({ error: "Invalid visibility" });
     const entry = fromUsd(Number(entryUsd) || 0);
     const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
@@ -472,7 +499,7 @@ export function apiRouter(io: Server) {
         buyIn: BigInt(ROOM_BUYIN), entryMicro: entry, prizePool: entry,
       },
     });
-    await prisma.seat.create({ data: { gameId: game.id, agentId: agent.id, userId: user.id, seatIndex: 0, stack: BigInt(ROOM_BUYIN), startStack: BigInt(ROOM_BUYIN) } });
+    await prisma.seat.create({ data: { gameId: game.id, agentId: agent.id, userId: user.id, isHuman: !!human, seatIndex: 0, stack: BigInt(ROOM_BUYIN), startStack: BigInt(ROOM_BUYIN) } });
     await prisma.$transaction([
       prisma.user.update({ where: { id: user.id }, data: { balance: { decrement: entry } } }),
       prisma.transaction.create({ data: { userId: user.id, type: "room_entry", amount: entry, meta: JSON.stringify({ gameId: game.id }) } }),
@@ -508,12 +535,12 @@ export function apiRouter(io: Server) {
       needsPassword: room.visibility === "private" && !!room.passwordHash,
       joined: room.seats.some((s) => s.userId === req.userId),
       maxPlayers: 6,
-      players: room.seats.map((s) => ({ seatIndex: s.seatIndex, userId: s.userId, username: s.user?.username, agent: s.agent })),
+      players: room.seats.map((s) => ({ seatIndex: s.seatIndex, userId: s.userId, username: s.user?.username, agent: s.agent, isHuman: s.isHuman })),
     }));
   });
 
   r.post("/rooms/:id/join", authMiddleware, async (req: AuthedRequest, res) => {
-    const { agentId, password } = req.body ?? {};
+    const { agentId, password, human = false } = req.body ?? {};
     const room = await prisma.game.findUnique({ where: { id: req.params.id }, include: { seats: true } });
     if (!room || !room.isRoom) return res.status(404).json({ error: "Room not found" });
     if (room.status !== "lobby") return res.status(400).json({ error: "Room has already started" });
@@ -527,7 +554,7 @@ export function apiRouter(io: Server) {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user || user.balance < room.entryMicro) return res.status(402).json({ error: "Insufficient balance for the entry fee" });
     await prisma.$transaction([
-      prisma.seat.create({ data: { gameId: room.id, agentId: agent.id, userId: user.id, seatIndex: room.seats.length, stack: room.buyIn, startStack: room.buyIn } }),
+      prisma.seat.create({ data: { gameId: room.id, agentId: agent.id, userId: user.id, isHuman: !!human, seatIndex: room.seats.length, stack: room.buyIn, startStack: room.buyIn } }),
       prisma.user.update({ where: { id: user.id }, data: { balance: { decrement: room.entryMicro } } }),
       prisma.game.update({ where: { id: room.id }, data: { prizePool: { increment: room.entryMicro } } }),
       prisma.transaction.create({ data: { userId: user.id, type: "room_entry", amount: room.entryMicro, meta: JSON.stringify({ gameId: room.id }) } }),
