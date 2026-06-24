@@ -479,13 +479,29 @@ export function apiRouter(io: Server) {
     seats: rm.seats.map((s: any) => ({ seatIndex: s.seatIndex, agent: s.agent })),
   });
 
+  // Resolve the agent that represents a seat. For a human player the agent is
+  // just a table identity — use their own if provided, otherwise any house
+  // agent — so you don't need to build an AI agent just to play yourself.
+  // For an AI-controlled seat you must field one of your own agents.
+  async function pickSeatAgent(agentId: any, userId: string, human: boolean) {
+    const owned = agentId ? await prisma.agent.findUnique({ where: { id: String(agentId) } }) : null;
+    if (human) {
+      if (owned && owned.ownerId === userId) return owned;
+      const house = await prisma.agent.findFirst({ where: { ownerId: null } });
+      if (house) return house;
+      return { error: "No table identities available right now.", status: 400 as const };
+    }
+    if (!owned) return { error: "Agent not found", status: 404 as const };
+    if (owned.ownerId !== userId) return { error: "Use one of your own agents", status: 403 as const };
+    return owned;
+  }
+
   r.post("/rooms", authMiddleware, async (req: AuthedRequest, res) => {
     const { visibility = "public", password, agentId, entryUsd = 5, smallBlind = 5, bigBlind = 10, name, human = false } = req.body ?? {};
     if (!["public", "private"].includes(visibility)) return res.status(400).json({ error: "Invalid visibility" });
     const entry = fromUsd(Number(entryUsd) || 0);
-    const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
-    if (!agent) return res.status(404).json({ error: "Agent not found" });
-    if (agent.ownerId !== req.userId) return res.status(403).json({ error: "Use one of your own agents" });
+    const agent = await pickSeatAgent(agentId, req.userId!, !!human);
+    if ("error" in agent) return res.status(agent.status).json({ error: agent.error });
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user || user.balance < entry) return res.status(402).json({ error: "Insufficient balance for the entry fee" });
     let code = genCode();
@@ -549,8 +565,8 @@ export function apiRouter(io: Server) {
     if (room.visibility === "private" && room.passwordHash) {
       if (!password || !(await bcrypt.compare(String(password), room.passwordHash))) return res.status(401).json({ error: "Wrong password" });
     }
-    const agent = await prisma.agent.findUnique({ where: { id: String(agentId) } });
-    if (!agent || agent.ownerId !== req.userId) return res.status(403).json({ error: "Use one of your own agents" });
+    const agent = await pickSeatAgent(agentId, req.userId!, !!human);
+    if ("error" in agent) return res.status(agent.status).json({ error: agent.error });
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user || user.balance < room.entryMicro) return res.status(402).json({ error: "Insufficient balance for the entry fee" });
     await prisma.$transaction([

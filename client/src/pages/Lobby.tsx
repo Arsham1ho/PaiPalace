@@ -53,9 +53,9 @@ export default function Lobby() {
   const copy = async (text: string) => { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); };
 
   const join = async () => {
-    if (!agentId) { setMsg("Pick an agent to field."); return; }
+    if (!human && !agentId) { setMsg("Pick an agent for the AI to field."); return; }
     setBusy(true); setMsg("");
-    try { await api.joinRoom(room.id, { agentId, password: password || undefined, human }); await load(); }
+    try { await api.joinRoom(room.id, { agentId: agentId || undefined, password: password || undefined, human }); await load(); }
     catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   };
   const start = async () => {
@@ -122,29 +122,28 @@ export default function Lobby() {
         {!room.joined ? (
           <div className="space-y-3">
             <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Join this room · {usd(room.entryMicro)} entry</h2>
-            {agents.length === 0 ? (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-400">Every player fields an agent. Create one now — it takes a few seconds and you'll come straight back here to join.</p>
-                <Link to={`/create?next=${encodeURIComponent(`/rooms/${room.id}`)}`} className="btn-primary inline-flex w-full justify-center">Create an agent & join →</Link>
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
+              <button onClick={() => setHuman(true)} className={`rounded-lg py-2 text-sm font-medium transition ${human ? "bg-ink-700 text-white" : "text-slate-400"}`}>I'll play</button>
+              <button onClick={() => setHuman(false)} className={`rounded-lg py-2 text-sm font-medium transition ${!human ? "bg-ink-700 text-white" : "text-slate-400"}`}>My AI agent</button>
+            </div>
+            <p className="text-center text-[11px] text-slate-500">{human ? "You make every decision at the table." : "Your AI agent plays for you automatically."}</p>
+
+            {agents.length > 0 ? (
+              <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
+                {agents.map((a) => (
+                  <button key={a.id} onClick={() => setAgentId(a.id)} className={`flex items-center gap-2 rounded-lg border p-2 text-left text-sm transition ${agentId === a.id ? "border-brand bg-brand/10" : "border-ink-700 hover:border-ink-600"}`}>
+                    <AgentAvatar avatar={a.avatar} name={a.name} size={26} /> <span className="truncate font-medium">{a.name}</span>
+                  </button>
+                ))}
               </div>
+            ) : human ? (
+              <p className="text-[11px] text-slate-500">No agent needed — you'll play as yourself with a default table avatar.</p>
             ) : (
-              <>
-                <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
-                  {agents.map((a) => (
-                    <button key={a.id} onClick={() => setAgentId(a.id)} className={`flex items-center gap-2 rounded-lg border p-2 text-left text-sm transition ${agentId === a.id ? "border-brand bg-brand/10" : "border-ink-700 hover:border-ink-600"}`}>
-                      <AgentAvatar avatar={a.avatar} name={a.name} size={26} /> <span className="truncate font-medium">{a.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-1 rounded-xl bg-ink-850 p-1">
-                  <button onClick={() => setHuman(true)} className={`rounded-lg py-2 text-sm font-medium transition ${human ? "bg-ink-700 text-white" : "text-slate-400"}`}>I'll play</button>
-                  <button onClick={() => setHuman(false)} className={`rounded-lg py-2 text-sm font-medium transition ${!human ? "bg-ink-700 text-white" : "text-slate-400"}`}>My AI agent</button>
-                </div>
-                <p className="text-center text-[11px] text-slate-500">{human ? "You make every decision at the table." : "Your AI agent plays for you automatically."}</p>
-                {room.needsPassword && <input type="text" className="input" placeholder="Room password" value={password} onChange={(e) => setPassword(e.target.value)} />}
-                <button className="btn-primary w-full" disabled={busy} onClick={join}>Join · stake {usd(room.entryMicro)}</button>
-              </>
+              <Link to={`/create?next=${encodeURIComponent(`/rooms/${room.id}`)}`} className="btn-ghost inline-flex w-full justify-center">Create an agent for the AI →</Link>
             )}
+
+            {room.needsPassword && <input type="text" className="input" placeholder="Room password" value={password} onChange={(e) => setPassword(e.target.value)} />}
+            <button className="btn-primary w-full" disabled={busy || (!human && !agentId)} onClick={join}>Join · stake {usd(room.entryMicro)}</button>
           </div>
         ) : room.isHost ? (
           <div className="space-y-2">
