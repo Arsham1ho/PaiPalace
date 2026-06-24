@@ -31,7 +31,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
   if (!open) return null;
 
   const create = async () => {
-    if (!agentId) { setMsg("Pick one of your agents to field."); return; }
+    if (!human && !agentId) { setMsg("Pick one of your agents for the AI to field."); return; }
     setBusy(true); setMsg("");
     try {
       const { id } = await api.createRoom({ name: name.trim() || undefined, visibility, password: password || undefined, agentId, entryUsd, smallBlind: Math.max(1, Math.floor(bigBlind / 2)), bigBlind, human });
@@ -48,11 +48,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
           <button onClick={onClose} className="absolute -right-1 -top-1 text-slate-400 hover:text-slate-100">✕</button>
         </div>
 
-        {agents && agents.length === 0 ? (
-          <div className="mt-6 text-center text-sm text-slate-400">
-            You need an agent first. <button onClick={() => { onClose(); nav("/create"); }} className="text-brand-light">Create one →</button>
-          </div>
-        ) : (
+        {(
           <div className="mt-5 space-y-4">
             {/* room name */}
             <div>
@@ -77,17 +73,23 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
               <p className="mt-1 text-[11px] text-slate-500">{human ? "You make every decision at the table. Your agent is just your identity/avatar." : "Your AI agent plays automatically on your behalf."}</p>
             </div>
 
-            {/* agent */}
+            {/* agent / table identity */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-400">{human ? "Your table identity" : "Your agent"}</label>
-              <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto">
-                {agents?.map((a) => (
-                  <button key={a.id} onClick={() => setAgentId(a.id)}
-                    className={`flex items-center gap-2 rounded-lg border p-2 text-left text-sm transition ${agentId === a.id ? "border-brand bg-brand/10" : "border-ink-700 hover:border-ink-600"}`}>
-                    <AgentAvatar avatar={a.avatar} name={a.name} size={28} /> <span className="font-medium">{a.name}</span>
-                  </button>
-                ))}
-              </div>
+              <label className="mb-1 block text-xs font-medium text-slate-400">{human ? "Your table identity (optional)" : "Your agent"}</label>
+              {agents == null ? null : agents.length > 0 ? (
+                <div className="grid max-h-40 grid-cols-1 gap-1.5 overflow-y-auto">
+                  {agents.map((a) => (
+                    <button key={a.id} onClick={() => setAgentId(a.id)}
+                      className={`flex items-center gap-2 rounded-lg border p-2 text-left text-sm transition ${agentId === a.id ? "border-brand bg-brand/10" : "border-ink-700 hover:border-ink-600"}`}>
+                      <AgentAvatar avatar={a.avatar} name={a.name} size={28} /> <span className="font-medium">{a.name}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : human ? (
+                <p className="text-[11px] text-slate-500">No agent needed — you'll play as yourself with a default table avatar.</p>
+              ) : (
+                <p className="text-sm text-slate-400">The AI needs an agent to field. <button onClick={() => { onClose(); nav("/create"); }} className="text-brand-light">Create one →</button></p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -109,7 +111,7 @@ export default function CreateRoomModal({ open, onClose }: { open: boolean; onCl
             )}
 
             {msg && <p className="text-xs text-down">{msg}</p>}
-            <button className="btn-primary w-full" disabled={busy || !agentId} onClick={create}>{busy ? "Creating…" : `Create room · stake $${entryUsd}`}</button>
+            <button className="btn-primary w-full" disabled={busy || (!human && !agentId)} onClick={create}>{busy ? "Creating…" : `Create room · stake $${entryUsd}`}</button>
             <p className="text-center text-[11px] text-slate-500">Everyone gets {1000} chips. Most chips at the end wins the prize pool.</p>
           </div>
         )}
