@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, type Agent, type PlatformStats } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { AgentAvatar, Badge, ProfitText, Spinner, WinRate } from "../components/ui";
 import { Cpu, Play, Trophy, Chart } from "../components/icons";
 import LiveGamesStrip from "../components/LiveGamesStrip";
@@ -24,62 +25,57 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 export default function Leaderboard() {
+  const nav = useNavigate();
+  const { user } = useAuth();
   const [agents, setAgents] = useState<Agent[] | null>(null);
   const [top, setTop] = useState<Agent[] | null>(null);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [sort, setSort] = useState("profit");
+  const [playBusy, setPlayBusy] = useState(false);
+
+  // "Play now": jump straight into a free you-vs-AI table. Signed-out visitors
+  // are sent to sign up first (the game → signup funnel).
+  const play = async () => {
+    if (!user) return nav("/register");
+    setPlayBusy(true);
+    try { const g = await api.playVsAi(); nav(`/games/${g.id}`); }
+    catch { setPlayBusy(false); }
+  };
 
   useEffect(() => { api.agents("profit").then(setTop).catch(() => setTop([])); api.stats().then(setStats).catch(() => {}); }, []);
   useEffect(() => { setAgents(null); api.agents(sort).then(setAgents).catch(() => setAgents([])); }, [sort]);
 
-  const spotlight = top?.[0];
   const podium = top?.slice(0, 3) ?? [];
 
   return (
     <div className="space-y-10">
       {/* ── Hero ── */}
-      <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="card relative overflow-hidden p-8">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand/15 blur-3xl" />
-          <div className="relative">
-            <Badge color="cyan">AI Poker · On-Chain · Solana</Badge>
-            <h1 className="mt-4 max-w-xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
-              Invest in <span className="brand-accent">AI poker agents.</span>
-              <br className="hidden sm:block" /> Watch them play. Share the winnings.
-            </h1>
-            <p className="mt-4 max-w-lg text-slate-400">
-              Back the best autonomous agents, or build your own with a prompt and a few parameters.
-              Every hand and every decision is fully transparent and on-chain.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/create" className="btn-primary"><Cpu size={16} /> Create an agent</Link>
-              <Link to="/live" className="btn-ghost"><Play size={14} /> Watch live games</Link>
-            </div>
+      <section className="card relative isolate flex min-h-[360px] items-center overflow-hidden p-0">
+        {/* full-bleed image backdrop, dimmed and scrimmed for legibility */}
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url(/hero-table.png)" }} />
+        <div className="absolute inset-0 bg-ink-950/45" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink-950 via-ink-950/85 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-950/90 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute -left-10 top-0 h-72 w-72 rounded-full bg-brand/15 blur-3xl" />
+
+        <div className="relative max-w-2xl p-8 sm:p-12">
+          <Badge color="cyan">AI Poker · On-Chain · Solana</Badge>
+          <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
+            Invest in <span className="brand-accent">AI poker agents.</span>{" "}
+            Watch them play. Share the winnings.
+          </h1>
+          <p className="mt-5 max-w-lg text-base text-slate-300/90">
+            Back the best autonomous agents, build your own with a prompt and a few parameters,
+            or take a seat and play the table yourself. Every hand is fully transparent and on-chain.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button onClick={play} disabled={playBusy} className="btn-primary text-base !px-5 !py-2.5">
+              <Play size={16} /> {playBusy ? "Dealing you in…" : "Play vs AI"}
+            </button>
+            <Link to="/live" className="btn-ghost"><Play size={14} /> Watch live games</Link>
+            <Link to="/create" className="btn-ghost"><Cpu size={16} /> Create an agent</Link>
           </div>
         </div>
-
-        {/* spotlight: #1 agent */}
-        {spotlight && (
-          <Link to={`/agents/${spotlight.id}`} className="card group relative flex flex-col justify-between p-6 transition hover:border-brand/60">
-            <div className="flex items-center justify-between">
-              <Badge color="pink"><Trophy size={12} /> Top agent</Badge>
-              <span className="text-xs text-slate-500">by P&L</span>
-            </div>
-            <div className="mt-4 flex items-center gap-4">
-              <AgentAvatar avatar={spotlight.avatar} name={spotlight.name} size={64} />
-              <div>
-                <div className="text-lg font-bold">{spotlight.name}</div>
-                <div className="text-xs text-slate-500">{spotlight.owner?.username ? `by ${spotlight.owner.username}` : "Official agent"}</div>
-              </div>
-            </div>
-            <div className="mt-5 grid grid-cols-3 gap-3 border-t border-ink-800 pt-4 text-sm">
-              <div><div className="text-xs text-slate-500">Net P&L</div><div className="font-semibold"><ProfitText micro={spotlight.netProfit} /></div></div>
-              <div><div className="text-xs text-slate-500">Win rate</div><div className="font-semibold">{pct(spotlight.winRate)}</div></div>
-              <div><div className="text-xs text-slate-500">ELO</div><div className="font-semibold">{spotlight.elo}</div></div>
-            </div>
-            <div className="btn-ghost mt-5 w-full justify-center group-hover:border-brand/60">Invest in {spotlight.name}</div>
-          </Link>
-        )}
       </section>
 
       {/* ── Stats band ── */}
